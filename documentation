@@ -1,0 +1,63 @@
+ _   _ _____ ____    __  ____   ___ ____  
+| \ | | ____/ ___|  / /_| ___| / _ |___ \ 
+|  \| |  _| \___ \ | '_ |___ \| | | |__) |
+| |\  | |___ ___)  | (_) ___) | |_| / __/ 
+|_| \_|_____|____/  \___|____/ \___|_____|
+June 25, 2019
+
+any number prefixed with $ in 6502 assembly means the value is in hex format
+$09 = decimal 09
+$0A = decimal 10
+$1F = decimal 31
+
+A # prefix means the literal value. Otherwise it points to a memory location.
+
+$09 != value 09
+$09 = memory address 09
+
+#$09 = hex value 09 = decimal value 09
+#$2F = hex value 2F = decimal value 61
+
+================= NES CPU ADDRESS BUS =======================
+$0000-0800 - Internal RAM, 2KB Chip in the NES
+$2000-2007 - PPU access ports
+$4000-4017 - Audio and controller access ports
+$6000-7FFF - Optional WRAM inside the game cart
+$8000-FFFF - Game cart ROM
+
+$FFFA-FFFF - NMI/RESET/IRQ vectors (16 bit values)
+=========================================================
+
+//value shortcuts//
+
+LDA #$05 = LDA #$0005
+LDA #$1D = LDA #$001D
+LDA #$1DA = LDA #$01DA
+
+//
+
+LDA <VALUE>  load into accumulator (add and subtract values here)
+LDX <VALUE>  load into x index (some functions are hardcoded to work on this register only)
+LDY <VALUE>  load into y index (same as above)
+
+TAX transfer value of a to x
+TAY transfer value of a to y
+TXY transfer value of x to y 
+
+STA <VALUE> store value of a into memory address <VALUE>
+STX <VALUE> store value of x into memory address <VALUE>
+STY <VALUE> store value of y into memory address <VALUE>
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+NES PROGRAMING TIPS:
+write functions between $8000-$FFFF, but store variables in ram $0000-0800.
+
+$4018-$401F PPU/IO normally disabled in most games.
+
+$4016-$4017 8-bit values can be read from these two addresses. (Correspond to each controller)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+DIRECTIVE TIPS:
+
+.dw NMI
+.dw RESET
+.dw IRQ
+
