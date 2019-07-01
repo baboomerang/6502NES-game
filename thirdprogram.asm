@@ -55,7 +55,7 @@ EnablePalettes:
 
 	LDX #$00                ; start out at 0
 LoadPalettesLoop:
-	LDA PaletteData, x      ; load data from address (PaletteData + the value in x)
+	LDA testpalette, x      ; load data from address (PaletteData + the value in x)
 				; 1st time through loop it will load PaletteData+0
 				; 2nd time through loop it will load PaletteData+1
 				; 3rd time through loop it will load PaletteData+2
@@ -67,13 +67,14 @@ LoadPalettesLoop:
 				; if compare was equal to 32, keep going down
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-	LDA #%00100000   ;intensify blues
+	LDA #%00100000 
 	STA $2001
 	LDA #$80
 	STA $0200        ; put sprite 0 in center ($80) of screen vert
 	STA $0203        ; put sprite 0 in center ($80) of screen horiz
-	LDA #$00
-	STA $0201        ; tile number = 0
+	LDA #$05
+	STA $0201        ; store tile number 5 at ram address. will be copied over to ppu ram due to DMA being enabled
+	LDA #$02
 	STA $0202        ; color = 0, no flipping
 
 	LDA #%10000000   ; enable NMI, sprites from Pattern Table 0

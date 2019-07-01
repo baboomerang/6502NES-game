@@ -1,9 +1,10 @@
 ; thirdprogram.asm
 clearmem                         = $C019
-Forever                          = $C05C
-LoadPalettesLoop                 = $0022
-PaletteData                      = $0000
+EnablePalettes                   = $C03D
+Forever                          = $C078
+LoadPalettesLoop                 = $C04C
 vblankwait1                      = $C014
 vblankwait2                      = $C038
 RESET                            = $C000
-NMI                              = $C05F
+NMI                              = $C07B
+testpalette                      = $E000
