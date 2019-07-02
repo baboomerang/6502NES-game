@@ -74,8 +74,8 @@ LoadPalettesLoop:
 	STA $0203        ; put sprite 0 in center ($80) of screen horiz
 	LDA #$05
 	STA $0201        ; store tile number 5 at ram address. will be copied over to ppu ram due to DMA being enabled
-	LDA #$02
-	STA $0202        ; color = 0, no flipping
+	LDA #$03
+	STA $0202        ; color = 2, no flipping
 
 	LDA #%10000000   ; enable NMI, sprites from Pattern Table 0
 	STA $2000
