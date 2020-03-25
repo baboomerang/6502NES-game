@@ -1,0 +1,11 @@
+; sixthprogram.asm
+ppuwait                          = $C014
+SPRITEDATA                       = $E020
+LOADPALETTE                      = $C050
+ppuwait2                         = $C039
+PALETTEDATA                      = $E000
+RESET                            = $C000
+NMI                              = $C070
+CLEARMEM                         = $C01A
+Loop                             = $C06D
+LOADSPRITE                       = $C05D

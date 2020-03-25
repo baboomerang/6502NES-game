@@ -52,8 +52,8 @@ RESET:
 	CLD		;disable decimal mode (because the NES6502 doesn't support it unlike the standard version)
 	LDX #$40
 	STX $4017
-	LDX #$FF
-	TXS		;create a stack at location $FF and it goes downwards in x value as items are pushed to it
+	LDX #$FF ;stack register starts at FF and increments down to FE, FD, FC..... to 00
+	TXS		;initialize the stack register at location $FF and it goes downwards in x value as items are pushed to it
 	INX
 	STX PPUCTRL 
 	STX PPUMASK
@@ -169,11 +169,11 @@ ENABLEREADCONTROLLERS:
 
 READCONTROLLERBUTTONS:
 	LDA $4016	;load a
-	ROR A
-	ROL controller
+	    ROR A
+	    ROL controller
 	LDA $4016	;load b
-	ROR A
-	ROL controller
+	    ROR A
+	    ROL controller
 	LDA $4016	;load select
         ROR A
         ROL controller
@@ -189,7 +189,7 @@ READCONTROLLERBUTTONS:
 	LDA $4016	;left
         ROR A
         ROL controller
-        LDA $4016	;right
+    LDA $4016	;right
         ROR A
         ROL controller	
 	RTI		;this will make sure that the whole controller is read before returning to drawing the next frame
@@ -198,13 +198,29 @@ READCONTROLLERBUTTONS:
 	.org $E000
 PALETTE:
 	.db $0F,$08,$28,$16,  $0F,$35,$36,$37,  $0F,$39,$3A,$3B,  $0F,$3D,$3E,$0F  ;background palette 
-        .db $0F,$29,$15,$14,  $0F,$02,$38,$26,  $0F,$29,$15,$14,  $0F,$02,$38,$26  ;sprite palette
+    .db $0F,$29,$15,$14,  $0F,$02,$38,$26,  $0F,$29,$15,$14,  $0F,$02,$38,$26  ;sprite palette
 SPRITES:
 	;vert ;tile ;attr ;horiz
 	.db $80,$32,$00,$80
 	.db $80,$33,$00,$88
 	.db $88,$34,$00,$80
 	.db $88,$35,$00,$88
+BACKGROUND:
+	.db $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;row 1
+	.db $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;all sky
+
+	.db $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;row 2
+	.db $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24  ;;all sky
+
+	.db $24,$24,$24,$24,$45,$45,$24,$24,$45,$45,$45,$45,$45,$45,$24,$24  ;;row 3
+	.db $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$53,$54,$24,$24  ;;some brick tops
+
+	.db $24,$24,$24,$24,$47,$47,$24,$24,$47,$47,$47,$47,$47,$47,$24,$24  ;;row 4
+	.db $24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$24,$55,$56,$24,$24  ;;brick bottoms
+
+attribute:
+	.db %00000000, %00010000, %01010000, %00010000, %00000000, %00000000, %00000000, %00110000
+	.db $24,$24,$24,$24, $47,$47,$24,$24 ,$47,$47,$47,$47, $47,$47,$24,$24 ,$24,$24,$24,$24 ,$24,$24,$24,$24, $24,$24,$24,$24, $55,$56,$24,$24  ;;brick bottoms
 
 	.org $FFFA
 	.dw NMI
