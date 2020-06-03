@@ -1,4 +1,0 @@
-; firstprogram.asm
-MyFunction                       = $8000
-RESET                            = $C000
-NMI                              = $C002

@@ -47,6 +47,7 @@ RESET:
     STX PPUMASK  ; turns off ppu mask
 
     STX SND_DELTA_REG ; disable the PCM channel so no random sounds
+
 ppuwait:
     BIT PPUSTATUS
     BPL ppuwait
@@ -113,6 +114,7 @@ NMI:
 
     .bank 1
     .org $E000
+
 PALETTEDATA:
 	.db $0F,$08,$28,$16,  $0F,$35,$36,$37,  $0F,$39,$3A,$3B,  $0F,$3D,$3E,$0F  ;background palette 
     .db $0F,$29,$15,$14,  $0F,$02,$38,$26,  $0F,$29,$15,$14,  $0F,$02,$38,$26  ;sprite palette
@@ -125,8 +127,8 @@ SPRITEDATA:
 
 
     .org $FFFA
-    .dw NMI     ; a word is a double byte. Or two hex letters
-    .dw RESET   ; $FFFA - $FFFF is 6 bytes, or 3 double bytes (3 words)
+    .dw NMI     ; a word is a double byte. Or two hex values $FE, $AF
+    .dw RESET   ; $FFFA - $FFFF is 8 bytes, or 4 double bytes (2 words)
     .dw 0       ; all 3 vectors placed at the end of the cartridge
 
     .bank 2
