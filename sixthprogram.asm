@@ -28,34 +28,31 @@ JOY1		 = $4016
 JOY2		 = $4017
 APU_IO		 = $4018 ;goes from ($4018-$401F) CPU test functions/testmode
 
+
+    .rsset $0000
+controller  .rs 1
+controller2 .rs 1
+
     .bank 0
     .org $C000
-
 RESET:
     SEI   ;disable all interrupts
     CLD   ;disable decimal mode because its unsupported on the NES variant 6502
-
     LDX #$40   
     STX $4017    ;this disables sound interrupt request (sound IRQ)
-
     LDX #$FF     
     TXS          ;initialize stack register at FF (it decrements as data is pushed)
-
     INX          ; $FF ---> $00
-
     STX PPUCTRL  ; turn off ppu
     STX PPUMASK  ; turns off ppu mask
-
     STX SND_DELTA_REG ; disable the PCM channel so no random sounds
 
 ppuwait:
     BIT PPUSTATUS
     BPL ppuwait
-
     TXA
 
-CLEARMEM:
- ;store the value of the accumulator (should be #$00) into 2kb ram
+CLEARMEM: ;store the value of the accumulator (should be #$00) into 2kb ram
     STA $0000, X ; $0000 --> $00FF
     STA $0100, X ; $0000 --> $01FF
     STA $0300, X ; $0000 --> $03FF
@@ -82,6 +79,7 @@ ppuwait2:
     LDA #$00
     STA PPUADDR  ; tell the ppu low byte of its own memory location
 ;ppu will start in its own private memory location at #$3F00 (separate from the cpu)
+;ppu is ready by this point after this line
 
     LDX #$00
 LOADPALETTE:
@@ -91,6 +89,7 @@ LOADPALETTE:
     CPX #$20
     BNE LOADPALETTE
 
+
     LDX #$00
 LOADSPRITE:
     LDA SPRITEDATA, X
@@ -98,11 +97,13 @@ LOADSPRITE:
     CPX #$20
     BNE LOADSPRITE
 
-
+;sprite data loaded, proceed with final setup
     CLI             ;enable interrupts again VERY IMPORTANT
     LDA #%10010000  ;enable NMI and use second chr set of tiles ($1000)
     STA PPUCTRL
-    LDA #%00011110  ;enables background, sprites, show sprites on vblank borders and disable greyscale
+    LDA #%00011110  ;enables background, sprites, show sprites on vblank borders, and
+                    ;disables greyscale
+;setup finished
 
 Loop:
     JMP Loop
@@ -110,11 +111,25 @@ Loop:
 NMI:
     LDA #$02
     STA OAMDMA      ;copy sprite data from $0200 to $02FF to screen
+    JSR READJOY1
     RTI
 
+READJOY1:
+    LDA #$01
+    STA JOY1  ;enable console to poll buttons for one cpu cycle
+    LDA #$00
+    STA JOY1  ;disable polling buttons
+    LDX #$08
+READJOY1LOOP:
+    LDA JOY1  ;load 1 bit at a time (must loop 8 times for the whole byte)
+    LSR A
+    ROL controller
+    DEX       ;once x goes down to zero, zero flag is set
+    BNE READJOY1LOOP ;loop until x = 0
+    RTS       ;once x = 0, return from subroutine
+ 
     .bank 1
     .org $E000
-
 PALETTEDATA:
 	.db $0F,$08,$28,$16,  $0F,$35,$36,$37,  $0F,$39,$3A,$3B,  $0F,$3D,$3E,$0F  ;background palette 
     .db $0F,$29,$15,$14,  $0F,$02,$38,$26,  $0F,$29,$15,$14,  $0F,$02,$38,$26  ;sprite palette
