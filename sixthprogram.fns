@@ -1,13 +1,14 @@
 ; sixthprogram.asm
 ppuwait                          = $C014
 SPRITEDATA                       = $E020
-LOADPALETTE                      = $C050
+LOADPALETTE                      = $C053
 ppuwait2                         = $C039
 PALETTEDATA                      = $E000
-READJOY1LOOP                     = $C085
+READJOY1LOOP                     = $C08E
+ENABLEPALETTES                   = $C044
 RESET                            = $C000
-READJOY1                         = $C079
-NMI                              = $C070
+READJOY1                         = $C082
+NMI                              = $C079
 CLEARMEM                         = $C01A
-Loop                             = $C06D
-LOADSPRITE                       = $C05D
+Loop                             = $C076
+LOADSPRITE                       = $C060

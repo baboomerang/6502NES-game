@@ -28,7 +28,7 @@ JOY1		 = $4016
 JOY2		 = $4017
 APU_IO		 = $4018 ;goes from ($4018-$401F) CPU test functions/testmode
 
-
+;zeropage
     .rsset $0000
 controller  .rs 1
 controller2 .rs 1
@@ -42,9 +42,9 @@ RESET:
     STX $4017    ;this disables sound interrupt request (sound IRQ)
     LDX #$FF     
     TXS          ;initialize stack register at FF (it decrements as data is pushed)
-    INX          ; $FF ---> $00
-    STX PPUCTRL  ; turn off ppu
-    STX PPUMASK  ; turns off ppu mask
+    INX          ;$FF ---> $00
+    STX PPUCTRL  ;turn off ppu
+    STX PPUMASK  ;turns off ppu mask
     STX SND_DELTA_REG ; disable the PCM channel so no random sounds
 
 ppuwait:
@@ -53,15 +53,15 @@ ppuwait:
     TXA
 
 CLEARMEM: ;store the value of the accumulator (should be #$00) into 2kb ram
-    STA $0000, X ; $0000 --> $00FF
-    STA $0100, X ; $0000 --> $01FF
-    STA $0300, X ; $0000 --> $03FF
+    STA $0000, X ;$0000 --> $00FF
+    STA $0100, X ;$0000 --> $01FF
+    STA $0300, X ;$0000 --> $03FF
     STA $0400, X
     STA $0500, X
     STA $0600, X
-    STA $0700, X ; $0700 --> $07FF
+    STA $0700, X ;$0700 --> $07FF
     LDA #$FF
-    STA $0200, X ; storing a value other than 0 so sprites dont appear on-screen
+    STA $0200, X ;storing a value other than 0 so sprites dont appear on-screen
     LDA #$00
     INX
     BNE CLEARMEM
@@ -69,15 +69,18 @@ CLEARMEM: ;store the value of the accumulator (should be #$00) into 2kb ram
 ppuwait2:
     BIT PPUSTATUS
     BPL ppuwait2
-
+   
+;once ppu cycle count 
     LDA #$02
-    STA OAMDMA   ; tell the ppu that the sprite data starts in ram $02XX (high byte) 
-    NOP          ; give an extra cycle for the ppu
-
+    STA OAMDMA   ;tell the ppu that the sprite data starts in ram $02XX (high byte) 
+    NOP          ;give an extra cycle for the ppu
+    
+ENABLEPALETTES:
+    LDA PPUSTATUS ;read from $2002 read ppu status to reset the latch to high.
     LDA #$3F
-    STA PPUADDR  ; tell the ppu high byte of its own memory location
+    STA PPUADDR  ;tell the ppu high byte of its own memory location
     LDA #$00
-    STA PPUADDR  ; tell the ppu low byte of its own memory location
+    STA PPUADDR  ;tell the ppu low byte of its own memory location
 ;ppu will start in its own private memory location at #$3F00 (separate from the cpu)
 ;ppu is ready by this point after this line
 
@@ -89,10 +92,10 @@ LOADPALETTE:
     CPX #$20
     BNE LOADPALETTE
 
-
     LDX #$00
 LOADSPRITE:
     LDA SPRITEDATA, X
+    STA $0200, X
     INX
     CPX #$20
     BNE LOADSPRITE
@@ -102,7 +105,7 @@ LOADSPRITE:
     LDA #%10010000  ;enable NMI and use second chr set of tiles ($1000)
     STA PPUCTRL
     LDA #%00011110  ;enables background, sprites, show sprites on vblank borders, and
-                    ;disables greyscale
+    STA PPUMASK     ;disables greyscale
 ;setup finished
 
 Loop:
@@ -131,8 +134,8 @@ READJOY1LOOP:
     .bank 1
     .org $E000
 PALETTEDATA:
-	.db $0F,$08,$28,$16,  $0F,$35,$36,$37,  $0F,$39,$3A,$3B,  $0F,$3D,$3E,$0F  ;background palette 
-    .db $0F,$29,$15,$14,  $0F,$02,$38,$26,  $0F,$29,$15,$14,  $0F,$02,$38,$26  ;sprite palette
+	.db $0F,$11,$28,$0D,  $0F,$35,$36,$37,  $0F,$39,$3A,$3B,  $0F,$3D,$3E,$0F  ;background palette 
+    .db $0F,$24,$36,$08,  $0F,$02,$38,$26,  $0F,$29,$15,$14,  $0F,$02,$38,$26  ;sprite palette
 
 SPRITEDATA:
 	.db $80,$32,$00,$80
