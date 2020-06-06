@@ -47,10 +47,7 @@ RESET:
     STX PPUMASK  ;turns off ppu mask
     STX SND_DELTA_REG ; disable the PCM channel so no random sounds
 
-ppuwait:
-    BIT PPUSTATUS
-    BPL ppuwait
-    TXA
+    JSR ppuwait
 
 CLEARMEM: ;store the value of the accumulator (should be #$00) into 2kb ram
     STA $0000, X ;$0000 --> $00FF
@@ -66,11 +63,8 @@ CLEARMEM: ;store the value of the accumulator (should be #$00) into 2kb ram
     INX
     BNE CLEARMEM
 
-ppuwait2:
-    BIT PPUSTATUS
-    BPL ppuwait2
-   
-;once ppu cycle count 
+    JSR ppuwait
+
     LDA #$02
     STA OAMDMA   ;tell the ppu that the sprite data starts in ram $02XX (high byte) 
     NOP          ;give an extra cycle for the ppu
@@ -117,6 +111,12 @@ NMI:
     JSR READJOY1
     RTI
 
+ppuwait:
+    BIT PPUSTATUS
+    BPL ppuwait
+    TXA
+    RTS
+
 READJOY1:
     LDA #$01
     STA JOY1  ;enable console to poll buttons for one cpu cycle
@@ -134,7 +134,7 @@ READJOY1LOOP:
     .bank 1
     .org $E000
 PALETTEDATA:
-	.db $0F,$11,$28,$0D,  $0F,$35,$36,$37,  $0F,$39,$3A,$3B,  $0F,$3D,$3E,$0F  ;background palette 
+    .db $0F,$11,$28,$0D,  $0F,$35,$36,$37,  $0F,$39,$3A,$3B,  $0F,$3D,$3E,$0F  ;background palette
     .db $0F,$24,$36,$08,  $0F,$02,$38,$26,  $0F,$29,$15,$14,  $0F,$02,$38,$26  ;sprite palette
 
 SPRITEDATA:
@@ -148,6 +148,7 @@ SPRITEDATA:
     .dw NMI     ; a word is a double byte. Or two hex values $FE, $AF
     .dw RESET   ; $FFFA - $FFFF is 8 bytes, or 4 double bytes (2 words)
     .dw 0       ; all 3 vectors placed at the end of the cartridge
+
 
     .bank 2
     .org $0000
