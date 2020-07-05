@@ -52,7 +52,6 @@ NES PROGRAMING TIPS:
 write functions between $8000-$FFFF, but store variables in ram $0000-0800.
 
 $4018-$401F PPU/IO normally disabled in most games.
-
 $4016-$4017 8-bit values can be read from these two addresses. (Correspond to each controller)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 DIRECTIVE TIPS:
@@ -61,3 +60,8 @@ DIRECTIVE TIPS:
 .dw RESET
 .dw IRQ
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+8 sprite tiles per scan line
+so mario (two sprites for the head) and 3 goombas (3 x 2 tiles)
+in a scan line, they would show up as (8 tiles) 
