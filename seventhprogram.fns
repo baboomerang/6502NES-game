@@ -1,0 +1,14 @@
+; seventhprogram.asm
+ppuwait                          = $C0AA
+SPRITEDATA                       = $E020
+LOADPALETTE                      = $C04E
+WORLDBIN                         = $E030
+WRITEBG                          = $C081
+PPUPALETTEINIT                   = $C03F
+ENABLEPPU                        = $C096
+PALETTEDATA                      = $E000
+RESET                            = $C000
+NMI                              = $C0A4
+CLEARMEM                         = $C017
+forever                          = $C0A1
+LOADSPRITE                       = $C05B
