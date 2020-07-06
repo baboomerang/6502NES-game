@@ -184,7 +184,7 @@ SPRITEDATA:
 	.db $82,$35,$00,$82
 
 WORLDBIN:
-    .incbin "worldorg.bin"
+    .incbin "world.bin"
 
     .org $FFFA
     .dw NMI     ; processor will jump to the label NMI
