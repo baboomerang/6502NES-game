@@ -29,6 +29,7 @@ JOY2		 = $4017
 APU_IO		 = $4018 ;goes from ($4018-$401F) CPU test functions/testmode
 
     .rsset $0000
+gamestate   .rs 1
 controller  .rs 1
 controller2 .rs 1
 worldptr    .rs 2
@@ -36,16 +37,18 @@ worldptr    .rs 2
     .bank 0
     .org $C000
 RESET:
-    SEI        ;disable interrupts
-    CLD        ;disable decimal mode
+    SEI         ;disable interrupts
+    CLD         ;disable decimal mode
     LDX #$40
-    STX $4017  ;disable sound
+    STX $4017   ;disable sound
     LDX #$FF
-    TXS        ;init stack
+    TXS         ;init stack
     INX
     STX PPUCTRL ;turn off ppu
     STX PPUMASK ;turn off ppu mask
     STX SND_DELTA_REG ;disable PCM channel
+    STX gamestate ;set gamestate to titlescreen
+
     JSR ppuwait
 
 CLEARMEM:
@@ -61,17 +64,16 @@ CLEARMEM:
     LDA #$00
     INX
     BNE CLEARMEM
+
     JSR ppuwait
 
-;tell the ppu that .... (check the comment below this line)
     LDA #$02
     STA OAMDMA   ;tell ppu that the sprite data starts in cpu ram $02XX (high byte) 
-; So we can write and change sprite data at any point from now on, 
-; and sprites will show in the next vblank.
+;So we can write and change sprite data at any point from now on, 
+;and sprites will show in the next vblank.
 
 
-;----------------------------------------------------------------------------------
-
+;================================================================================
 
 ;tell the ppu where to store palette data and load it into 3F00
     NOP          ;give an extra cycle for the ppu
@@ -90,7 +92,6 @@ LOADPALETTE:
     CPX #$20      ;decimal 32, hex 20
     BNE LOADPALETTE
 
-
 ;load sprite data into CPU ram $0200 so it can be displayed at next vblank
     LDX #$00
 LOADSPRITE:
@@ -100,7 +101,7 @@ LOADSPRITE:
     CPX #$20
     BNE LOADSPRITE
 
-
+;=================================================================================
 
 ;tell ppu to write to nametable
     BIT PPUSTATUS
@@ -109,10 +110,10 @@ LOADSPRITE:
     LDA #$00
     STA PPUADDR
 
-    ;;background updates must be done before an NMI, disable nmi if you have to.
-    ;;indirect indexing assumes a 16 bit (double byte) pointer not an 8 byte one
-    ;;so low byte and high byte pointers are next to each other in zeropage
-    ;;so the low byte is combined with the high byte by default
+    ;background updates must be done before an NMI, disable nmi if you have to.
+    ;indirect indexing assumes a 16 bit (double byte) pointer not an 8 byte one
+    ;so low byte and high byte pointers are next to each other in zeropage
+    ;so the low byte is combined with the high byte by default
     LDA #LOW(WORLDBIN)
     STA worldptr
     LDA #HIGH(WORLDBIN)
@@ -125,15 +126,17 @@ WRITEBG:
     LDA [worldptr], Y
     STA PPUDATA
     INY
+    CPX #$03
+    BNE CHECKY
+    CPY #$C0
+    BEQ ENABLEPPU
+
+CHECKY:
     CPY #$00
     BNE WRITEBG
-
-    CPX #$03
-    BEQ ENABLEPPU
     INX
     INC (worldptr+1)
     JMP WRITEBG
-
 
 ENABLEPPU:         
     CLI            ;enable interrupts
@@ -142,11 +145,12 @@ ENABLEPPU:
     LDA #%00011110 ;enable background, sprites, sprite on vblank border, greyscale=0
     STA PPUMASK
 
+
 forever:
     JMP forever
 
-;;do not put game logic code in NMI
-;;nmi has very little time to update graphics + game logic. Please be smart
+;do not put game logic code in NMI
+;nmi has very little time to update graphics + game logic. Please be smart
 NMI:
     LDA #$02
     STA OAMDMA      ;tell ppu to load sprite data from cpu ram $0200
