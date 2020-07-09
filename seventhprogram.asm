@@ -49,8 +49,6 @@ RESET:
     STX SND_DELTA_REG ;disable PCM channel
     STX gamestate ;set gamestate to titlescreen
 
-    JSR ppuwait
-
 CLEARMEM:
     STA $0000, X ;$0000 --> $00FF
     STA $0100, X ;$0000 --> $01FF
@@ -65,18 +63,12 @@ CLEARMEM:
     INX
     BNE CLEARMEM
 
-    JSR ppuwait
-
     LDA #$02
-    STA OAMDMA   ;tell ppu that the sprite data starts in cpu ram $02XX (high byte) 
-;So we can write and change sprite data at any point from now on, 
-;and sprites will show in the next vblank.
-
+    STA OAMADDR
 
 ;================================================================================
 
 ;tell the ppu where to store palette data and load it into 3F00
-    NOP          ;give an extra cycle for the ppu
 PPUPALETTEINIT:
     LDA PPUSTATUS
     LDA #$3F
@@ -101,8 +93,6 @@ LOADSPRITE:
     CPX #$20
     BNE LOADSPRITE
 
-;=================================================================================
-
 ;tell ppu to write to nametable
     BIT PPUSTATUS
     LDA #$20
@@ -118,8 +108,7 @@ LOADSPRITE:
     STA worldptr
     LDA #HIGH(WORLDBIN)
     STA worldptr+1
-
-;pointers have been set, write to nametable now
+   
     LDX #$00
     LDY #$00
 WRITEBG:
@@ -129,7 +118,7 @@ WRITEBG:
     CPX #$03
     BNE CHECKY
     CPY #$C0
-    BEQ ENABLEPPU
+    BEQ DONE
 
 CHECKY:
     CPY #$00
@@ -137,17 +126,12 @@ CHECKY:
     INX
     INC (worldptr+1)
     JMP WRITEBG
+DONE:
+    JSR Enableppu
 
-ENABLEPPU:         
-    CLI            ;enable interrupts
-    LDA #%10010000 ;enable nmi and use second chr set of tiles ($1000)
-    STA PPUCTRL
-    LDA #%00011110 ;enable background, sprites, sprite on vblank border, greyscale=0
-    STA PPUMASK
-
-
-forever:
-    JMP forever
+Engine: 
+    JSR READJOY1
+    JMP Engine
 
 ;do not put game logic code in NMI
 ;nmi has very little time to update graphics + game logic. Please be smart
@@ -156,16 +140,40 @@ NMI:
     STA OAMDMA      ;tell ppu to load sprite data from cpu ram $0200
     RTI
 
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; SUB ROUTINES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-ppuwait:
-    BIT PPUSTATUS
-    BPL ppuwait    ;loop until negative scanline index (negative = vblank/NMI time)
-    TXA
+Pauseppu:
+    SEI            ;disable interrupts
+    LDA PPUCTRL
+    ASL A          ;clear bit 7
+    LSR A          ;shift %0 into bit 7
+    STA PPUCTRL    ;disable nmi
+    LDA #%00011110 ;enable background, sprites, sprite on vblank border, greyscale=0
+    STA PPUMASK
+    RTS
+
+Enableppu:
+    CLI            ;enable interrupts
+    LDA #%10010000 ;enable nmi and use second chr set of tiles ($1000)
+    STA PPUCTRL
+    LDA #%00011110 ;enable background, sprites, sprite on vblank border, greyscale=0
+    STA PPUMASK
+    RTS
+
+READJOY1:
+    LDA #$01
+    STA JOY1    ;enable button polling for 5 cpu cycles
+    LDA #$00
+    STA JOY1    ;disable button polling
+    LDX #$08
+READJOY1LOOP:
+    LDA JOY1       ;load 1 bit at a time (loop 8 times to get the whole byte)
+    LSR A          ;shift 1 bit from A into carry
+    ROL controller ;rotate out of carry into controller variable
+    DEX            ;once x is zero, zero flag is set
+    BNE READJOY1LOOP ;loop until x is zero
     RTS
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
