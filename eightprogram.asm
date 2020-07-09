@@ -79,21 +79,20 @@ CLEARMEM:
 
     LDX #$00
 LOADPALETTE:
-    LDA PALETTEDATA, X
+    LDA palettedata, X
     STA PPUDATA
-    INX CPX #$20
+    INX
+    CPX #$20
     BNE LOADPALETTE
 
 ;load sprites into cpu ram
     LDX #$00
 LOADSPRITE:
-    LDA SPRITEDATA, X
+    LDA spritedata, X
     STA $0200, X
     INX
     CPX #$20
     BNE LOADSPRITE
-
-
 
 
 MODESELECT:
@@ -101,17 +100,24 @@ MODESELECT:
     CMP #$01            ;if gamestate is 1, load world instead
     BEQ loadworld       ;else load title instead
 loadtitle:
-    LDA #LOW(TITLEBIN)
-    STA worldptr
-    LDA #HIGH(TITLEBIN)
+    LDA #LOW(titlebin)
+    STA worldptr        ;set the pointer to title screen
+    LDA #HIGH(titlebin)
     STA worldptr+1
     JMP BG
 loadworld:
-    LDA #LOW(WORLDBIN)
-    STA worldptr
-    LDA #HIGH(WORLDBIN)
+    LDA #LOW(worldbin)
+    STA worldptr        ;set the pointer to world screen
+    LDA #HIGH(worldbin)
     STA worldptr+1
+
 BG:
+    BIT PPUSTATUS       ;tell ppu to store data in nametable
+    LDA #$20
+    STA PPUADDR
+    LDA #$00
+    STA PPUADDR
+
     LDX #$00
     LDY #$00
 WRITEBG:
@@ -130,7 +136,6 @@ CHECKY:
     JMP WRITEBG
 DONE:
     JSR ENABLEPPU
-
 
 
 Engine:
