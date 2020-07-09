@@ -195,7 +195,7 @@ READJOY1LOOP:
     .bank 1
     .org $E000
 palettedata:
-    .db $15,$11,$28,$15,  $15,$35,$36,$37,  $15,$39,$3A,$3B,  $15,$21,$23,$01  ;background palette
+    .db $15,$36,$25,$14,  $15,$35,$36,$37,  $15,$39,$3A,$3B,  $15,$21,$23,$01  ;background palette
     .db $0F,$24,$36,$08,  $0F,$02,$38,$26,  $0F,$29,$15,$14,  $0F,$02,$38,$26  ;sprite palette
 
 spritedata:
