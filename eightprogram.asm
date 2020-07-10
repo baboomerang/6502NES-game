@@ -33,6 +33,25 @@ gamestate   .rs 1
 controller  .rs 1
 controller2 .rs 1
 worldptr    .rs 2
+playerptr   .rs 1
+
+;r_butt  =   %00000001  ;#$01
+;l_butt  =   %00000010  ;#$02
+;d_butt  =   %00000100  ;#$04
+;u_butt  =   %00001000  ;#$08
+;start   =   %00010000  ;#$10
+;select  =   %00100000  ;#$20
+;b_butt  =   %01000000  ;#$40
+;a_butt  =   %10000000  ;#$80
+
+r_butt  = $01
+l_butt  = $02
+d_butt  = $04
+u_butt  = $08
+start   = $10
+select  = $20
+b_butt  = $40
+a_butt  = $80
 
     .bank 0
     .org $C000
@@ -95,6 +114,7 @@ LOADSPRITE:
     BNE LOADSPRITE
 
 
+
 MODESELECT:
     LDA gamestate
     CMP #$01            ;if gamestate is 1, load world instead
@@ -139,17 +159,45 @@ DONE:
 
 
 Engine:
-    JSR READJOY1
+
     JMP Engine
 
 NMI:
+    ;PHA
+    ;TXA
+    ;PHA
+    ;TYA
+    ;PHA
+    ;performing controller code reads are weird
+    
+    LDA #$00
+    JSR READJOY1
+
+    LDA controller          ;load #%xxxx xxxx
+    CMP #u_butt             ;compare 2F to 08
+    BCC SKIPMOVE            ;if they are the same skip draw
+    INC $0203
+
+SKIPMOVE:
     LDA #$02
     STA OAMDMA
+
+    JSR MusicEngine
+    ;your code above this line
+
+    ;PLA
+    ;TAY
+    ;PLA
+    ;TAX
+    ;PLA
     RTI
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; SUBROUTINES
+;;;; SUBROUTINES       ;
 ;;;;;;;;;;;;;;;;;;;;;;;;
+
+MusicEngine:
+    RTS
 
 PPUWAIT:
     BIT PPUSTATUS
@@ -162,7 +210,7 @@ PAUSEPPU:
     ASL A          ;clear bit 7
     LSR A          ;shift %0 into bit 7
     STA PPUCTRL    ;disable nmi
-    LDA #%00011110 ;enable background, sprites, sprite on vblank border, greyscale=0
+    LDA #%00001110 ;enable background, sprites, sprite on vblank border, greyscale=0
     STA PPUMASK
     RTS
 
@@ -189,7 +237,7 @@ READJOY1LOOP:
     RTS
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; DATA BANKS
+;;;; DATA BANKS        ;
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
     .bank 1
@@ -216,4 +264,4 @@ worldbin:
 
     .bank 2
     .org $0000
-    .incbin "mario2.chr"
+    .incbin "mario.chr"
