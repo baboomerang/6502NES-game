@@ -35,15 +35,6 @@ controller2 .rs 1
 worldptr    .rs 2
 playerptr   .rs 1
 
-;r_butt  =   %00000001  ;#$01
-;l_butt  =   %00000010  ;#$02
-;d_butt  =   %00000100  ;#$04
-;u_butt  =   %00001000  ;#$08
-;start   =   %00010000  ;#$10
-;select  =   %00100000  ;#$20
-;b_butt  =   %01000000  ;#$40
-;a_butt  =   %10000000  ;#$80
-
 r_butt  = 1 << 0
 l_butt  = 1 << 1
 d_butt  = 1 << 2
@@ -58,7 +49,6 @@ AMP .macro
     AND \2
     CMP \2
     .endm
-
 
     .bank 0
     .org $C000
@@ -91,6 +81,8 @@ CLEARMEM:
     INX
     BNE CLEARMEM 
     
+    LDA #$00
+    STA OAMADDR  ;write lowbyte
     LDA #$02
     STA OAMDMA   ;tell ppu the sprite data lives in cpuram $0200
         
@@ -164,41 +156,17 @@ DONE:
     JSR ENABLEPPU
 
 
-
 Engine:
     JMP Engine
 
+
 NMI:
-    ;PHA
-    ;TXA
-    ;PHA
-    ;TYA
-    ;PHA
-
     JSR READJOY1
-    AMP controller, #r_butt
-    BNE l
-    INC $0203
-l:  AMP controller, #l_butt
-    BNE d
-    DEC $0203
-d:  AMP controller, #d_butt
-    BNE u
-    INC $0200
-u:  AMP controller, #u_butt
-    BNE sel
-    DEC $0200
-sel:
-
-RELOADSPRITES:
+OAMUPDATE:
+    LDA #$00
+    STA OAMADDR
     LDA #$02
     STA OAMDMA
-
-    ;PLA
-    ;TAY
-    ;PLA
-    ;TAX
-    ;PLA
     RTI
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
