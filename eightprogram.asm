@@ -106,7 +106,7 @@ LOADPALETTE:
 ;load sprites into cpu ram
     LDX #$00
 LOADSPRITE:
-    LDA spritedata, X
+    LDA playersprite, X
     STA $0200, X
     INX
     CPX #$10
@@ -175,7 +175,6 @@ NMI:
     TYA   ;2
     PHA   ;3
     ;total 18 cycles
-
     
     
 OAMUPDATE:
@@ -183,6 +182,7 @@ OAMUPDATE:
     STA OAMADDR
     LDA #$02
     STA OAMDMA
+
 
     PLA   ;4
     TAY   ;2
@@ -243,16 +243,16 @@ READJOY1LOOP:
     .bank 1
     .org $E000
 palettedata:
-    .db $15,$36,$25,$14   ;background palette
-    .db $15,$35,$36,$37
-    .db $15,$39,$3A,$3B
-    .db $15,$21,$23,$01
+    .db $FF,$36,$25,$14   ;background palette
+    .db $FF,$35,$36,$37
+    .db $FF,$39,$3A,$3B
+    .db $FF,$21,$23,$01
     .db $0F,$24,$36,$08   ;sprite palette
     .db $0F,$02,$38,$26
     .db $0F,$29,$15,$14 
     .db $0F,$02,$38,$26 
 
-spritedata:
+playersprite:
 	.db $7A,$32,$00,$7A
 	.db $7A,$33,$00,$82
 	.db $82,$34,$00,$7A
