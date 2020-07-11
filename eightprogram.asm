@@ -44,14 +44,21 @@ playerptr   .rs 1
 ;b_butt  =   %01000000  ;#$40
 ;a_butt  =   %10000000  ;#$80
 
-r_butt  = $01
-l_butt  = $02
-d_butt  = $04
-u_butt  = $08
-start   = $10
-select  = $20
-b_butt  = $40
-a_butt  = $80
+r_butt  = 1 << 0
+l_butt  = 1 << 1
+d_butt  = 1 << 2
+u_butt  = 1 << 3
+start   = 1 << 4
+select  = 1 << 5
+b_butt  = 1 << 6
+a_butt  = 1 << 7
+
+AMP .macro
+    LDA \1
+    AND \2
+    CMP \2
+    .endm
+
 
     .bank 0
     .org $C000
@@ -95,7 +102,6 @@ CLEARMEM:
     STA PPUADDR
     LDA #$00
     STA PPUADDR
-
     LDX #$00
 LOADPALETTE:
     LDA palettedata, X
@@ -158,8 +164,8 @@ DONE:
     JSR ENABLEPPU
 
 
-Engine:
 
+Engine:
     JMP Engine
 
 NMI:
@@ -168,22 +174,25 @@ NMI:
     ;PHA
     ;TYA
     ;PHA
-    ;performing controller code reads are weird
-    
-    LDA #$00
+
     JSR READJOY1
-
-    LDA controller          ;load #%xxxx xxxx
-    CMP #u_butt             ;compare 2F to 08
-    BCC SKIPMOVE            ;if they are the same skip draw
+    AMP controller, #r_butt
+    BNE l
     INC $0203
+l:  AMP controller, #l_butt
+    BNE d
+    DEC $0203
+d:  AMP controller, #d_butt
+    BNE u
+    INC $0200
+u:  AMP controller, #u_butt
+    BNE sel
+    DEC $0200
+sel:
 
-SKIPMOVE:
+RELOADSPRITES:
     LDA #$02
     STA OAMDMA
-
-    JSR MusicEngine
-    ;your code above this line
 
     ;PLA
     ;TAY
@@ -195,9 +204,6 @@ SKIPMOVE:
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; SUBROUTINES       ;
 ;;;;;;;;;;;;;;;;;;;;;;;;
-
-MusicEngine:
-    RTS
 
 PPUWAIT:
     BIT PPUSTATUS
@@ -223,6 +229,9 @@ ENABLEPPU:
     RTS
 
 READJOY1:
+    ;LDA controller
+    ;STA prevctrlr
+
     LDA #$01
     STA JOY1    ;enable button polling for 5 cpu cycles
     LDA #$00
@@ -234,6 +243,11 @@ READJOY1LOOP:
     ROL controller ;rotate out of carry into controller variable
     DEX            ;once x is zero, zero flag is set
     BNE READJOY1LOOP ;loop until x is zero
+    
+    ;LDA prevctrlr  ;load previous controller
+    ;EOR #$FF       ;negate acummulator
+    ;AND controller ;anything that matches with the previous state stays
+    ;STA controller ;update current state
     RTS
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
