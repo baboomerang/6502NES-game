@@ -30,6 +30,7 @@ APU_IO		 = $4018 ;goes from ($4018-$401F) CPU test functions/testmode
 
     .rsset $0000
 gamestate   .rs 1
+drawflag    .rs 1
 controller  .rs 1
 controller2 .rs 1
 worldptr    .rs 2
@@ -108,7 +109,7 @@ LOADSPRITE:
     LDA spritedata, X
     STA $0200, X
     INX
-    CPX #$20
+    CPX #$10
     BNE LOADSPRITE
 
 
@@ -156,24 +157,48 @@ DONE:
     JSR ENABLEPPU
 
 
+
+;we have about 29780 cpu cycles to work with between each vblank
 Engine:
+
+    JSR READJOY1    ;154 cycles, could be NMI'd at any point
     JMP Engine
 
-
+;vblank time and a rendering time
+;RENDER: 262 scanlines per frame, 341 PPU cycles per line, 1 pixel per clock
+;VBLANK: 
 NMI:
-    JSR READJOY1
+    PHP   ;3
+    PHA   ;3
+    TXA   ;2
+    PHA   ;3
+    TYA   ;2
+    PHA   ;3
+    ;total 18 cycles
+
+    
+    
 OAMUPDATE:
     LDA #$00
     STA OAMADDR
     LDA #$02
     STA OAMDMA
-    RTI
+
+    PLA   ;4
+    TAY   ;2
+    PLA   ;4
+    TAX   ;2
+    PLA   ;4
+    PLP   ;4
+    ;total 22 cycles
+
+    RTI   ;6
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; SUBROUTINES       ;
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
-PPUWAIT:
+PPUWAIT:    ;this could be a macro tbh
     BIT PPUSTATUS
     BPL PPUWAIT
     RTS
@@ -197,9 +222,7 @@ ENABLEPPU:
     RTS
 
 READJOY1:
-    ;LDA controller
-    ;STA prevctrlr
-
+;+6 +2+4 +2+4 +2 | (+4 +2 +5 +2 +3) x 8 + 6 = 16*8 + 6*3 + 2 = 154 CPU CYCLES
     LDA #$01
     STA JOY1    ;enable button polling for 5 cpu cycles
     LDA #$00
@@ -211,11 +234,6 @@ READJOY1LOOP:
     ROL controller ;rotate out of carry into controller variable
     DEX            ;once x is zero, zero flag is set
     BNE READJOY1LOOP ;loop until x is zero
-    
-    ;LDA prevctrlr  ;load previous controller
-    ;EOR #$FF       ;negate acummulator
-    ;AND controller ;anything that matches with the previous state stays
-    ;STA controller ;update current state
     RTS
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -225,8 +243,14 @@ READJOY1LOOP:
     .bank 1
     .org $E000
 palettedata:
-    .db $15,$36,$25,$14,  $15,$35,$36,$37,  $15,$39,$3A,$3B,  $15,$21,$23,$01  ;background palette
-    .db $0F,$24,$36,$08,  $0F,$02,$38,$26,  $0F,$29,$15,$14,  $0F,$02,$38,$26  ;sprite palette
+    .db $15,$36,$25,$14   ;background palette
+    .db $15,$35,$36,$37
+    .db $15,$39,$3A,$3B
+    .db $15,$21,$23,$01
+    .db $0F,$24,$36,$08   ;sprite palette
+    .db $0F,$02,$38,$26
+    .db $0F,$29,$15,$14 
+    .db $0F,$02,$38,$26 
 
 spritedata:
 	.db $7A,$32,$00,$7A
