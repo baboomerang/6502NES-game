@@ -31,6 +31,8 @@ APU_IO		 = $4018 ;goes from ($4018-$401F) CPU test functions/testmode
     .rsset $0000
 gamestate   .rs 1
 drawflag    .rs 1
+backgroundflag .rs 1
+spriteflag  .rs 1
 controller  .rs 1
 controller2 .rs 1
 worldptr    .rs 2
@@ -45,11 +47,20 @@ select  = 1 << 5
 b_butt  = 1 << 6
 a_butt  = 1 << 7
 
-AMP .macro
+    .macro AMP
     LDA \1
     AND \2
     CMP \2
     .endm
+
+    ;12 cycles
+    .macro OAMUPDATE
+    LDA \1
+    STA OAMADDR ;write lowbyte
+    LDA \2
+    STA OAMDMA  ;write highbyte, begin transfer immediately
+    .endm
+
 
     .bank 0
     .org $C000
@@ -82,11 +93,7 @@ CLEARMEM:
     INX
     BNE CLEARMEM 
     
-    LDA #$00
-    STA OAMADDR  ;write lowbyte
-    LDA #$02
-    STA OAMDMA   ;tell ppu the sprite data lives in cpuram $0200
-        
+    OAMUPDATE #$00, #$02
     JSR PPUWAIT
 
 ;tell ppu where to store the palettedata
@@ -103,14 +110,14 @@ LOADPALETTE:
     CPX #$20
     BNE LOADPALETTE
 
-;load sprites into cpu ram
+;load player into cpu ram
     LDX #$00
-LOADSPRITE:
+LOADPLAYER:
     LDA playersprite, X
     STA $0200, X
     INX
     CPX #$10
-    BNE LOADSPRITE
+    BNE LOADPLAYER
 
 
 
@@ -157,12 +164,12 @@ DONE:
     JSR ENABLEPPU
 
 
-
 ;we have about 29780 cpu cycles to work with between each vblank
 Engine:
-
     JSR READJOY1    ;154 cycles, could be NMI'd at any point
+    JSR MUSICENGINE ;lets see, could be NMI'd too 
     JMP Engine
+
 
 ;vblank time and a rendering time
 ;RENDER: 262 scanlines per frame, 341 PPU cycles per line, 1 pixel per clock
@@ -175,15 +182,23 @@ NMI:
     TYA   ;2
     PHA   ;3
     ;total 18 cycles
-    
-    
-OAMUPDATE:
-    LDA #$00
-    STA OAMADDR
-    LDA #$02
-    STA OAMDMA
+INIT:
+    lda drawflag
+    BEQ END
+BACKGROUND:
+    LDA backgroundflag
+    BEQ SPRITE
+;load background (to do: insert scrolling)
 
 
+
+
+
+SPRITE:
+    LDA spriteflag
+    BNE END
+    OAMUPDATE #$00, #$02
+END:
     PLA   ;4
     TAY   ;2
     PLA   ;4
@@ -191,8 +206,15 @@ OAMUPDATE:
     PLA   ;4
     PLP   ;4
     ;total 22 cycles
-
     RTI   ;6
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;; MUSIC ENGINE      ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+MUSICENGINE:
+    LDY #$FF
+    RTS
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; SUBROUTINES       ;
@@ -203,16 +225,6 @@ PPUWAIT:    ;this could be a macro tbh
     BPL PPUWAIT
     RTS
 
-PAUSEPPU:
-    SEI            ;disable interrupts
-    LDA PPUCTRL
-    ASL A          ;clear bit 7
-    LSR A          ;shift %0 into bit 7
-    STA PPUCTRL    ;disable nmi
-    LDA #%00001110 ;enable background, sprites, sprite on vblank border, greyscale=0
-    STA PPUMASK
-    RTS
-
 ENABLEPPU:
     CLI            ;enable interrupts
     LDA #%10010000 ;enable nmi and use second chr set of tiles ($1000)
@@ -221,8 +233,7 @@ ENABLEPPU:
     STA PPUMASK
     RTS
 
-READJOY1:
-;+6 +2+4 +2+4 +2 | (+4 +2 +5 +2 +3) x 8 + 6 = 16*8 + 6*3 + 2 = 154 CPU CYCLES
+READJOY1:       ;154 cpu cycles from JSR to RTS
     LDA #$01
     STA JOY1    ;enable button polling for 5 cpu cycles
     LDA #$00
