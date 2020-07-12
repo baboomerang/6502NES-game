@@ -61,12 +61,21 @@ a_butt  = 1 << 7
     STA OAMDMA  ;write highbyte, begin transfer immediately
     .endm
 
-    .macro SETPTR ; SETPTR ptr*, addr($XXXX)
+    .macro SETPTR ; SETPTR ptr*, $kkkk
     LDA #LOW(\2)
     STA \1       ;set the low byte of pointer to lowbyte of world address
     LDA #HIGH(\2)
     STA \1+1     ;set the high byte of pointer to highbyte of world address
     .endm
+
+    .macro LDSPR ; LDSPR $kkkk, #i
+    LDX #$00
+.load\@
+    LDA \1, X    ;copy indexed sprite by byte to shadow OAM
+    STA $0200, X
+    INX
+    CPX \2       ;loop until specified size
+    BNE .load\@
 
 
     .bank 0
@@ -116,16 +125,6 @@ LOADPALETTE:
     INX
     CPX #$20
     BNE LOADPALETTE
-
-;load player into cpu ram
-    LDX #$00
-LOADPLAYER:
-    LDA playersprite, X
-    STA $0200, X
-    INX
-    CPX #$10
-    BNE LOADPLAYER
-
 
 MODESELECT:
     LDA gamestate
