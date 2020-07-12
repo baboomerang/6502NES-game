@@ -54,27 +54,30 @@ a_butt  = 1 << 7
     .endm
 
     ;12 cycles
-    .macro OAMUPDATE
+    .macro OAMUPDATE ; OAMUPDATE #i, #i 
     LDA \1
     STA OAMADDR ;write lowbyte
     LDA \2
     STA OAMDMA  ;write highbyte, begin transfer immediately
     .endm
 
-    .macro SETPTR ; SETPTR ptr*, $kkkk
+    .macro SETPTR ; SETPTR ptr*, $LLHH
     LDA #LOW(\2)
     STA \1       ;set the low byte of pointer to lowbyte of world address
     LDA #HIGH(\2)
     STA \1+1     ;set the high byte of pointer to highbyte of world address
     .endm
-
-    .macro LDSPR ; LDSPR $kkkk, #i
+    
+    ;257 cpu cycles = 2+(4+5+2+2+3)*16-1 , with sprite length 16
+    ;formula: 16x+1 where x is the length of sprite
+    ;                   source  dest. length
+    .macro LDSPR ; LDSPR $LLHH, $LLHH, #i
     LDX #$00
 .load\@
     LDA \1, X    ;copy indexed sprite by byte to shadow OAM
-    STA $0200, X
+    STA \2, X
     INX
-    CPX \2       ;loop until specified size
+    CPX \3       ;loop until specified size
     BNE .load\@
 
 
@@ -131,10 +134,10 @@ MODESELECT:
     CMP #$01            ;if gamestate is 1, load world instead
     BEQ loadworld       ;else load title instead
 loadtitle:
-    SETPTR titlebin, worldptr
+    SETPTR worldptr, titlebin
     JMP BG
 loadworld:
-    SETPTR worldbin, worldptr
+    SETPTR worldptr, worldbin
 
 BG:
     BIT PPUSTATUS       ;tell ppu to store data in nametable
@@ -169,7 +172,6 @@ Engine:
     JSR MUSICENGINE ;lets see, could be NMI'd too 
     JMP Engine
 
-
 ;vblank time and a rendering time
 ;RENDER: 262 scanlines per frame, 341 PPU cycles per line, 1 pixel per clock
 ;VBLANK: 
@@ -182,7 +184,7 @@ NMI:
     PHA   ;3
     ;total 18 cycles
 INIT:
-    lda drawflag
+    LDA drawflag
     BEQ END
 BACKGROUND:
     LDA backgroundflag
@@ -208,7 +210,7 @@ END:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 MUSICENGINE:
-    LDY #$FF
+    LDY #$FF    ;best music engine in the world
     RTS
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
