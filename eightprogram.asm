@@ -61,11 +61,11 @@ a_butt  = 1 << 7
     STA OAMDMA  ;write highbyte, begin transfer immediately
     .endm
 
-    .macro SETPTR
-    LDA #LOW(\1)
-    STA \2       ;set the low byte of pointer to lowbyte of world address
-    LDA #HIGH(\1)
-    STA \2+1     ;set the high byte of pointer to highbyte of world address
+    .macro SETPTR ; SETPTR ptr*, addr($XXXX)
+    LDA #LOW(\2)
+    STA \1       ;set the low byte of pointer to lowbyte of world address
+    LDA #HIGH(\2)
+    STA \1+1     ;set the high byte of pointer to highbyte of world address
     .endm
 
 
@@ -189,7 +189,7 @@ BACKGROUND:
     LDA backgroundflag
     BEQ SPRITE
 ;load background (to do: insert scrolling)
-    
+    LDY #$FE
 SPRITE:
     LDA spriteflag
     BNE END
