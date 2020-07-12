@@ -61,6 +61,13 @@ a_butt  = 1 << 7
     STA OAMDMA  ;write highbyte, begin transfer immediately
     .endm
 
+    .macro SETPTR
+    LDA #LOW(\1)
+    STA \2       ;set the low byte of pointer to lowbyte of world address
+    LDA #HIGH(\1)
+    STA \2+1     ;set the high byte of pointer to highbyte of world address
+    .endm
+
 
     .bank 0
     .org $C000
@@ -78,6 +85,7 @@ RESET:
     STX gamestate ;set gamestate to titlescreen
 
     JSR PPUWAIT
+    JSR PPUWAIT
 
 CLEARMEM:
     STA $0000, X ;$0000 --> $00FF
@@ -94,7 +102,6 @@ CLEARMEM:
     BNE CLEARMEM 
     
     OAMUPDATE #$00, #$02
-    JSR PPUWAIT
 
 ;tell ppu where to store the palettedata
     LDA PPUSTATUS
@@ -120,22 +127,15 @@ LOADPLAYER:
     BNE LOADPLAYER
 
 
-
 MODESELECT:
     LDA gamestate
     CMP #$01            ;if gamestate is 1, load world instead
     BEQ loadworld       ;else load title instead
 loadtitle:
-    LDA #LOW(titlebin)
-    STA worldptr        ;set the pointer to title screen
-    LDA #HIGH(titlebin)
-    STA worldptr+1
+    SETPTR titlebin, worldptr
     JMP BG
 loadworld:
-    LDA #LOW(worldbin)
-    STA worldptr        ;set the pointer to world screen
-    LDA #HIGH(worldbin)
-    STA worldptr+1
+    SETPTR worldbin, worldptr
 
 BG:
     BIT PPUSTATUS       ;tell ppu to store data in nametable
@@ -189,11 +189,7 @@ BACKGROUND:
     LDA backgroundflag
     BEQ SPRITE
 ;load background (to do: insert scrolling)
-
-
-
-
-
+    
 SPRITE:
     LDA spriteflag
     BNE END
@@ -262,6 +258,9 @@ palettedata:
     .db $0F,$02,$38,$26
     .db $0F,$29,$15,$14 
     .db $0F,$02,$38,$26 
+
+titlesprite:
+    .db $C0,$32,$00,$C0
 
 playersprite:
 	.db $7A,$32,$00,$7A
