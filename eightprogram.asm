@@ -264,10 +264,10 @@ titlesprite:
     .db $C0,$32,$00,$C0
 
 playersprite:
-	.db $7A,$32,$00,$7A
-	.db $7A,$33,$00,$82
-	.db $82,$34,$00,$7A
-	.db $82,$35,$00,$82
+    .db $7A,$32,$00,$7A
+    .db $7A,$33,$00,$82
+    .db $82,$34,$00,$7A
+    .db $82,$35,$00,$82
 
 titlebin:
     .incbin "titlescreen.bin"
