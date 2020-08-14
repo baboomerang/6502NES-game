@@ -31,8 +31,10 @@ APU_IO		 = $4018 ;goes from ($4018-$401F) CPU test functions/testmode
     .rsset $0000
 gamestate   .rs 1
 drawflag    .rs 1
-backgroundflag .rs 1
+nametblflag .rs 1
+scrollflag  .rs 1
 spriteflag  .rs 1
+
 controller  .rs 1
 controller2 .rs 1
 worldptr    .rs 2
@@ -53,6 +55,14 @@ a_butt  = 1 << 7
     CMP \2
     .endm
 
+    ;13 cycles
+    .macro STZ ; STZ $LLHH
+    PHA        ;3
+    LDA #$00   ;2
+    STA \1     ;store zerovalue ;4
+    PLA        ;4
+    .endm
+
     ;12 cycles
     .macro OAMUPDATE ; OAMUPDATE #i, #i 
     LDA \1
@@ -70,7 +80,7 @@ a_butt  = 1 << 7
     
     ;257 cpu cycles = 2+(4+5+2+2+3)*16-1 , with sprite length 16
     ;formula: 16x+1 where x is the length of sprite
-    ;                   source  dest. length
+    ;                  source  dest. length
     .macro LDSPR ; LDSPR $LLHH, $LLHH, #i
     LDX #$00
 .load\@
@@ -79,6 +89,7 @@ a_butt  = 1 << 7
     INX
     CPX \3       ;loop until specified size
     BNE .load\@
+    .endm
 
 
     .bank 0
@@ -129,6 +140,7 @@ LOADPALETTE:
     CPX #$20
     BNE LOADPALETTE
 
+
 MODESELECT:
     LDA gamestate
     CMP #$01            ;if gamestate is 1, load world instead
@@ -168,13 +180,13 @@ DONE:
 
 ;we have about 29780 cpu cycles to work with between each vblank
 Engine:
+    ;these execute during ppu render period
     JSR READJOY1    ;154 cycles, could be NMI'd at any point
     JSR MUSICENGINE ;lets see, could be NMI'd too 
     JMP Engine
 
-;vblank time and a rendering time
-;RENDER: 262 scanlines per frame, 341 PPU cycles per line, 1 pixel per clock
-;VBLANK: 
+;RENDER PERIOD: 262 scanlines per frame, 341 PPU cycles per line, 1 pixel per clock
+;VBLANK PERIOD: 
 NMI:
     PHP   ;3
     PHA   ;3
@@ -183,18 +195,30 @@ NMI:
     TYA   ;2
     PHA   ;3
     ;total 18 cycles
-INIT:
+
     LDA drawflag
     BEQ END
-BACKGROUND:
-    LDA backgroundflag
-    BEQ SPRITE
-;load background (to do: insert scrolling)
-    LDY #$FE
-SPRITE:
+    STZ drawflag            ;latch it immediately, avoid double NMI's permanently
+
+DMA:
     LDA spriteflag
-    BNE END
+    BEQ NAME
     OAMUPDATE #$00, #$02
+    STZ spriteflag
+
+NAME:
+    LDA nametblflag
+    BEQ SCROLL
+    STZ nametblflag
+    ;JSR DECOMPRESSOR       ;lz77 decompressor into memory
+    ;we have enough time to send ~180 bytes during vblank
+
+SCROLL:
+    LDA scrollflag
+    BEQ END
+    STZ scrollflag
+
+
 END:
     PLA   ;4
     TAY   ;2
@@ -203,6 +227,7 @@ END:
     PLA   ;4
     PLP   ;4
     ;total 22 cycles
+
     RTI   ;6
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
