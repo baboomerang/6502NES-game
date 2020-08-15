@@ -18,7 +18,7 @@ PPUSCROLL	 = $2005
 PPUADDR		 = $2006
 PPUDATA		 = $2007
 
-SND_DELTA_REG = $4010 ;DMC_FREQ
+SND_DELTA_REG  = $4010 ;DMC_FREQ
 DMC_FREQ	 = $4010
 
 SPR_DMA		 = $4014 ;OAMDMA
@@ -178,15 +178,17 @@ DONE:
     JSR ENABLEPPU
 
 
-;we have about 29780 cpu cycles to work with between each vblank
+;we have about 29780 cpu cycles to work with between each END OF RENDER
+;and the rising edge of an NMI
+
 Engine:
     ;these execute during ppu render period
     JSR READJOY1    ;154 cycles, could be NMI'd at any point
     JSR MUSICENGINE ;lets see, could be NMI'd too 
     JMP Engine
 
-;RENDER PERIOD: 262 scanlines per frame, 341 PPU cycles per line, 1 pixel per clock
-;VBLANK PERIOD: 
+;PREVBLANK: 262 scanlines per frame, 341 PPU cycles per line, 1 pixel per clock
+;ONCE NMI OCCURS: 2270 cycles between an NMI and START OF RENDER
 NMI:
     PHP   ;3
     PHA   ;3
@@ -218,7 +220,6 @@ SCROLL:
     BEQ END
     STZ scrollflag
 
-
 END:
     PLA   ;4
     TAY   ;2
@@ -227,7 +228,6 @@ END:
     PLA   ;4
     PLP   ;4
     ;total 22 cycles
-
     RTI   ;6
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
