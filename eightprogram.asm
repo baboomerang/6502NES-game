@@ -38,7 +38,7 @@ spriteflag  .rs 1
 controller  .rs 1
 controller2 .rs 1
 worldptr    .rs 2
-playerptr   .rs 1
+playerptr   .rs 2
 
 r_butt  = 1 << 0
 l_butt  = 1 << 1
@@ -71,17 +71,17 @@ a_butt  = 1 << 7
     STA OAMDMA  ;write highbyte, begin transfer immediately
     .endm
 
-    .macro SETPTR ; SETPTR ptr*, $LLHH
+    .macro SETPTR ;SETPTR ptr*, $LLHH
     LDA #LOW(\2)
-    STA \1       ;set the low byte of pointer to lowbyte of world address
+    STA \1        ;set the low byte of pointer to lowbyte of world address
     LDA #HIGH(\2)
-    STA \1+1     ;set the high byte of pointer to highbyte of world address
+    STA \1+1      ;set the high byte of pointer to highbyte of world address
     .endm
     
     ;257 cpu cycles = 2+(4+5+2+2+3)*16-1 , with sprite length 16
-    ;formula: 16x+1 where x is the length of sprite
+    ;formula: 16x-1 where x is the length of sprite
     ;                  source  dest. length
-    .macro LDSPR ; LDSPR $LLHH, $LLHH, #i
+    .macro LDSPR ;LDSPR $LLHH, $LLHH, #i
     LDX #$00
 .load\@
     LDA \1, X    ;copy indexed sprite by byte to shadow OAM
@@ -127,10 +127,11 @@ CLEARMEM:
     OAMUPDATE #$00, #$02
 
 ;tell ppu where to store the palettedata
+PPULOADPAL:
     LDA PPUSTATUS
     LDA #$3F
     STA PPUADDR
-    LDA #$00
+    LDA #$10
     STA PPUADDR
     LDX #$00
 LOADPALETTE:
@@ -147,6 +148,8 @@ MODESELECT:
     BEQ loadworld       ;else load title instead
 loadtitle:
     SETPTR worldptr, titlebin
+    LDSPR titlesprite, $0200, #$04
+    SETPTR playerptr, $0200
     JMP BG
 loadworld:
     SETPTR worldptr, worldbin
@@ -172,7 +175,7 @@ CHECKY:
     CPY #$00
     BNE WRITEBG
     INX
-    INC (worldptr+1)
+    INC (worldptr+1)    ;increment the high byte of the pointer
     JMP WRITEBG
 DONE:
     JSR ENABLEPPU
@@ -182,8 +185,12 @@ DONE:
 ;and the rising edge of an NMI
 
 Engine:
-    ;these execute during ppu render period
     JSR READJOY1    ;154 cycles, could be NMI'd at any point
+    
+    LDY #$01
+    STY drawflag
+    STY spriteflag
+
     JSR MUSICENGINE ;lets see, could be NMI'd too 
     JMP Engine
 
@@ -197,7 +204,6 @@ NMI:
     TYA   ;2
     PHA   ;3
     ;total 18 cycles
-
     LDA drawflag
     BEQ END
     STZ drawflag            ;latch it immediately, avoid double NMI's permanently
@@ -205,8 +211,8 @@ NMI:
 DMA:
     LDA spriteflag
     BEQ NAME
-    OAMUPDATE #$00, #$02
     STZ spriteflag
+    OAMUPDATE #$00, #$02
 
 NAME:
     LDA nametblflag
@@ -242,7 +248,7 @@ MUSICENGINE:
 ;;;; SUBROUTINES       ;
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
-PPUWAIT:    ;this could be a macro tbh
+PPUWAIT:        ;this could be a macro tbh
     BIT PPUSTATUS
     BPL PPUWAIT
     RTS
@@ -255,19 +261,19 @@ ENABLEPPU:
     STA PPUMASK
     RTS
 
-READJOY1:       ;154 cpu cycles from JSR to RTS
+;improved controller read code: 133 cycles compared to 154 cycles
+READJOY1:     ;16 cycles first part
     LDA #$01
-    STA JOY1    ;enable button polling for 5 cpu cycles
-    LDA #$00
-    STA JOY1    ;disable button polling
-    LDX #$08
-READJOY1LOOP:
-    LDA JOY1       ;load 1 bit at a time (loop 8 times to get the whole byte)
-    LSR A          ;shift 1 bit from A into carry
-    ROL controller ;rotate out of carry into controller variable
-    DEX            ;once x is zero, zero flag is set
-    BNE READJOY1LOOP ;loop until x is zero
-    RTS
+    STA JOY1         ;enable button polling
+    STA controller   ;set up ring counter with 1 as start
+    LSR A            ;set accumulator to 0
+    STA JOY1         ;disable polling
+READJOY1LOOP: ;111 cycles for 8 loops
+    LDA JOY1         ;load 1 bit at a time. Total 8 bits need to be read
+    LSR A            ;accumulator into carry
+    ROL controller   ;rotate out of carry into variable
+    BCC READJOY1LOOP ;carry will be 0 once all 8 buttons are loaded
+    RTS              ;+6 cycles
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; DATA BANKS        ;
@@ -286,7 +292,7 @@ palettedata:
     .db $0F,$02,$38,$26 
 
 titlesprite:
-    .db $C0,$32,$00,$C0
+    .db $5C,$28,$00,$32
 
 playersprite:
     .db $7A,$32,$00,$7A
