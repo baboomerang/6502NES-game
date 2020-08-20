@@ -35,8 +35,11 @@ nametblflag .rs 1
 scrollflag  .rs 1
 spriteflag  .rs 1
 
+prevctrl    .rs 1
 controller  .rs 1
+prevctrl2   .rs 1
 controller2 .rs 1
+
 worldptr    .rs 2
 playerptr   .rs 2
 
@@ -126,6 +129,7 @@ CLEARMEM:
     
     OAMUPDATE #$00, #$02
 
+
 ;tell ppu where to store the palettedata
 PPULOADPAL:
     LDA PPUSTATUS
@@ -153,6 +157,7 @@ loadtitle:
     JMP BG
 loadworld:
     SETPTR worldptr, worldbin
+
 
 BG:
     BIT PPUSTATUS       ;tell ppu to store data in nametable
@@ -262,17 +267,20 @@ ENABLEPPU:
     RTS
 
 ;improved controller read code: 133 cycles compared to 154 cycles
+;uses only 1 register and is also DPCM safe
 READJOY1:     ;16 cycles first part
-    LDA #$01
-    STA JOY1         ;enable button polling
-    STA controller   ;set up ring counter with 1 as start
-    LSR A            ;set accumulator to 0
-    STA JOY1         ;disable polling
+    LDA #$02
+    STA OAMDMA       ;------- DMA ---------
+    LDA #1           ;                                                    ;2 odd
+    STA controller   ;set up ring counter with 1 as start                 ;3 even
+    STA JOY1         ;enable button polling                               ;4 even 
+    LSR A            ;set accumulator to 0                                ;2 even
+    STA JOY1         ;disable polling                                     ;4 even
 READJOY1LOOP: ;111 cycles for 8 loops
-    LDA JOY1         ;load 1 bit at a time. Total 8 bits need to be read
-    LSR A            ;accumulator into carry
-    ROL controller   ;rotate out of carry into variable
-    BCC READJOY1LOOP ;carry will be 0 once all 8 buttons are loaded
+    LDA JOY1         ;load 1 bit at a time. Total 8 bits need to be read  ;4 even
+    LSR A            ;accumulator into carry                              ;2 even
+    ROL controller   ;rotate out of carry into variable                   ;5 odd
+    BCC READJOY1LOOP ;carry will be 0 once all 8 buttons are loaded       ;3 even
     RTS              ;+6 cycles
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -292,7 +300,7 @@ palettedata:
     .db $0F,$02,$38,$26 
 
 titlesprite:
-    .db $5C,$28,$00,$32
+    .db $5C,$75,$03,$32
 
 playersprite:
     .db $7A,$32,$00,$7A
