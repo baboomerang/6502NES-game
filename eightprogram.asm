@@ -35,9 +35,7 @@ nametblflag .rs 1
 scrollflag  .rs 1
 spriteflag  .rs 1
 
-prevctrl    .rs 1
 controller  .rs 1
-prevctrl2   .rs 1
 controller2 .rs 1
 
 worldptr    .rs 2
@@ -69,16 +67,24 @@ a_butt  = 1 << 7
     ;12 cycles
     .macro OAMUPDATE ; OAMUPDATE #i, #i 
     LDA \1
-    STA OAMADDR ;write lowbyte
+    STA OAMADDR ;write lowbyte $XXLL of the address first
     LDA \2
-    STA OAMDMA  ;write highbyte, begin transfer immediately
+    STA OAMDMA  ;write highbyte, begin transfer immediately $HHXX
     .endm
 
-    .macro SETPTR ;SETPTR ptr*, $LLHH
+    .macro SETPTR ;SETPTR ptr*, $HHLL
     LDA #LOW(\2)
     STA \1        ;set the low byte of pointer to lowbyte of world address
     LDA #HIGH(\2)
     STA \1+1      ;set the high byte of pointer to highbyte of world address
+    .endm
+
+    .macro SETPPUADDR ;SETPPUADDR $HHLL
+    BIT PPUSTATUS ;reset latch
+    LDA #HIGH(\1) ;$3f
+    STA PPUADDR
+    LDA #LOW(\1)  ;$00
+    STA PPUADDR
     .endm
     
     ;257 cpu cycles = 2+(4+5+2+2+3)*16-1 , with sprite length 16
@@ -129,14 +135,7 @@ CLEARMEM:
     
     OAMUPDATE #$00, #$02
 
-
-;tell ppu where to store the palettedata
-PPULOADPAL:
-    LDA PPUSTATUS
-    LDA #$3F
-    STA PPUADDR
-    LDA #$10
-    STA PPUADDR
+    SETPPUADDR #$3F10
     LDX #$00
 LOADPALETTE:
     LDA palettedata, X
@@ -145,11 +144,9 @@ LOADPALETTE:
     CPX #$20
     BNE LOADPALETTE
 
-
 MODESELECT:
     LDA gamestate
-    CMP #$01            ;if gamestate is 1, load world instead
-    BEQ loadworld       ;else load title instead
+    BNE loadworld
 loadtitle:
     SETPTR worldptr, titlebin
     LDSPR titlesprite, $0200, #$04
@@ -158,14 +155,8 @@ loadtitle:
 loadworld:
     SETPTR worldptr, worldbin
 
-
 BG:
-    BIT PPUSTATUS       ;tell ppu to store data in nametable
-    LDA #$20
-    STA PPUADDR
-    LDA #$00
-    STA PPUADDR
-
+    SETPPUADDR #$2000
     LDX #$00
     LDY #$00
 WRITEBG:
@@ -185,17 +176,11 @@ CHECKY:
 DONE:
     JSR ENABLEPPU
 
-
 ;we have about 29780 cpu cycles to work with between each END OF RENDER
 ;and the rising edge of an NMI
-
 Engine:
     JSR READJOY1    ;154 cycles, could be NMI'd at any point
-    
-    LDY #$01
-    STY drawflag
-    STY spriteflag
-
+    JSR MOVEMENT
     JSR MUSICENGINE ;lets see, could be NMI'd too 
     JMP Engine
 
@@ -269,8 +254,8 @@ ENABLEPPU:
 ;improved controller read code: 133 cycles compared to 154 cycles
 ;uses only 1 register and is also DPCM safe
 READJOY1:     ;16 cycles first part
-    LDA #$02
-    STA OAMDMA       ;------- DMA ---------
+    ;LDA #$02
+    ;STA OAMDMA       ;------- DMA ---------
     LDA #1           ;                                                    ;2 odd
     STA controller   ;set up ring counter with 1 as start                 ;3 even
     STA JOY1         ;enable button polling                               ;4 even 
@@ -282,6 +267,11 @@ READJOY1LOOP: ;111 cycles for 8 loops
     ROL controller   ;rotate out of carry into variable                   ;5 odd
     BCC READJOY1LOOP ;carry will be 0 once all 8 buttons are loaded       ;3 even
     RTS              ;+6 cycles
+
+MOVEMENT:
+    LDA controller
+    AND u_butt | d_butt
+    RTS
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; DATA BANKS        ;
@@ -296,8 +286,8 @@ palettedata:
     .db $FF,$21,$23,$01
     .db $0F,$24,$36,$08   ;sprite palette
     .db $0F,$02,$38,$26
-    .db $0F,$29,$15,$14 
-    .db $0F,$02,$38,$26 
+    .db $0F,$29,$15,$14
+    .db $0F,$02,$38,$26
 
 titlesprite:
     .db $5C,$75,$03,$32
@@ -320,4 +310,4 @@ worldbin:
 
     .bank 2
     .org $0000
-    .incbin "mario.chr"
+    .incbin "mario2.chr"
