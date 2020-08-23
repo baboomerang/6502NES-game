@@ -79,9 +79,9 @@ a_butt  = 1 << 7
 
     .macro SETPPUADDR ;SETPPUADDR $HHLL
     BIT PPUSTATUS ;reset latch
-    LDA #HIGH(\1) ;$3f
+    LDA #HIGH(\1) ;$3f write the high byte of address first
     STA PPUADDR
-    LDA #LOW(\1)  ;$00
+    LDA #LOW(\1)  ;$00 write the low byte of the address second
     STA PPUADDR
     .endm
     
@@ -152,6 +152,7 @@ loadtitle:
     LDSPR titlesprite, $0200, #$04
     SETPTR playerptr, $0200
     ;write the titlescreen array
+    ;i could have written these to $0400 instead 
     LDA #$5C
     STA menumodes
     LDA #$7C
@@ -166,9 +167,8 @@ loadworld:
     LDSPR playerptr, $0200, #$16
     SETPTR playerptr, $0200
 
-
 BG:
-    SETPPUADDR #$2000
+    SETPPUADDR #$2000  ;set target address to first nametable
     LDX #$00
     LDY #$00
 WRITEBG:
@@ -185,8 +185,6 @@ CHECKY:
     INX
     INC (worldptr+1)    ;increment the high byte of the pointer
     JMP WRITEBG
-
-
 DONE:
     JSR ENABLEPPU
 
@@ -291,14 +289,41 @@ READJOY1LOOP: ;111 cycles for 8 loops
     RTS              ;+6 cycles
 
 
-MOVEMENT:
-    
+MOVEMENT:  
+    LDA #1
+    STA drawflag
+    STA spriteflag
+
     LDA controller
     LDX menumodes+4
     LDY playermode
 
-    BEQ TMOVESET    ;if mode = 0 use titlescreen moveset, else use normal moveset
+    BNE NORMALMOVE    ;if mode = 0 use titlescreen moveset, else use normal moveset
 
+    AND a_butt
+    BNE TCHECKU
+
+TCHECKU:
+    AND u_butt
+    BNE TCHECKD
+    CPX #$00
+    BEQ tchecku_2
+    DEX
+tchecku_2:
+    LDY menumodes, X
+    STY (playerptr)
+TCHECKD:
+    AND d_butt
+    BNE MOVDONE
+    CPX #$03
+    BEQ tcheckd_2
+    INX
+tcheckd_2:
+    LDY menumodes, X
+    STY (playerptr)
+    JMP MOVDONE
+
+NORMALMOVE:
     AND l_butt
     BNE CHECKR
     INC (playerptr+3)
@@ -319,32 +344,7 @@ CHECKD:
     AND d_butt
     BNE MOVDONE
 
-
-
-TMOVESET:
-    AND a_butt
-    BNE TCHECKU
-
-TCHECKU:
-    AND u_butt
-    BNE TCHECKD
-    CPX #$00
-    BEQ tchecku_2
-    DEX
-tchecku_2:
-    LDY menumodes, X
-    STY (playerptr)
-
-TCHECKD:
-    AND d_butt
-    BNE MOVDONE
-    CPX #$03
-    BEQ tcheckd_2
-    INX
-tcheckd_2:
-    LDY menumodes, X
-    STY (playerptr)
-
+    JMP MOVDONE
 MOVDONE:
     RTS
 
