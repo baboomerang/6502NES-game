@@ -35,11 +35,19 @@ nametblflag .rs 1
 scrollflag  .rs 1
 spriteflag  .rs 1
 
+playermode  .rs 1
 controller  .rs 1
 controller2 .rs 1
 
 worldptr    .rs 2
 playerptr   .rs 2
+
+menumodes   .rs 5
+
+top  = $5C
+mid  = $7C
+bot  = $9C
+quit = $AC
 
 r_butt  = 1 << 0
 l_butt  = 1 << 1
@@ -132,8 +140,19 @@ CLEARMEM:
     LDA #$00
     INX
     BNE CLEARMEM 
-    
+
+
+    LDA #top
+    STA menumodes
+    LDA #mid
+    STA menumodes+1
+    LDA #bot
+    STA menumodes+2
+    LDA #quit
+    STA menumodes+3
+
     OAMUPDATE #$00, #$02
+
 
     SETPPUADDR #$3F10
     LDX #$00
@@ -144,9 +163,10 @@ LOADPALETTE:
     CPX #$20
     BNE LOADPALETTE
 
+
 MODESELECT:
     LDA gamestate
-    BNE loadworld
+    BNE loadworld    ;if gamestate = 0 load title, if gamestate = 1 load world
 loadtitle:
     SETPTR worldptr, titlebin
     LDSPR titlesprite, $0200, #$04
@@ -154,6 +174,9 @@ loadtitle:
     JMP BG
 loadworld:
     SETPTR worldptr, worldbin
+    LDSPR playerptr, $0200, #$16
+    SETPTR playerptr, $0200
+
 
 BG:
     SETPPUADDR #$2000
@@ -173,15 +196,16 @@ CHECKY:
     INX
     INC (worldptr+1)    ;increment the high byte of the pointer
     JMP WRITEBG
+
+
 DONE:
     JSR ENABLEPPU
 
 ;we have about 29780 cpu cycles to work with between each END OF RENDER
 ;and the rising edge of an NMI
 Engine:
-    JSR READJOY1    ;154 cycles, could be NMI'd at any point
     JSR MOVEMENT
-    JSR MUSICENGINE ;lets see, could be NMI'd too 
+    JSR MUSICENGINE
     JMP Engine
 
 ;PREVBLANK: 262 scanlines per frame, 341 PPU cycles per line, 1 pixel per clock
@@ -194,9 +218,12 @@ NMI:
     TYA   ;2
     PHA   ;3
     ;total 18 cycles
+    JSR READJOY1    ;133 cycles
+
+DRAW:
     LDA drawflag
     BEQ END
-    STZ drawflag            ;latch it immediately, avoid double NMI's permanently
+    STZ drawflag
 
 DMA:
     LDA spriteflag
@@ -216,7 +243,7 @@ SCROLL:
     BEQ END
     STZ scrollflag
 
-END:
+END: 
     PLA   ;4
     TAY   ;2
     PLA   ;4
@@ -251,11 +278,17 @@ ENABLEPPU:
     STA PPUMASK
     RTS
 
+DISABLEPPU:
+    SEI
+    LDA #%00010000
+    STA PPUCTRL
+    LDA #%00000000
+    STA PPUMASK
+    RTS
+
 ;improved controller read code: 133 cycles compared to 154 cycles
 ;uses only 1 register and is also DPCM safe
 READJOY1:     ;16 cycles first part
-    ;LDA #$02
-    ;STA OAMDMA       ;------- DMA ---------
     LDA #1           ;                                                    ;2 odd
     STA controller   ;set up ring counter with 1 as start                 ;3 even
     STA JOY1         ;enable button polling                               ;4 even 
@@ -268,9 +301,59 @@ READJOY1LOOP: ;111 cycles for 8 loops
     BCC READJOY1LOOP ;carry will be 0 once all 8 buttons are loaded       ;3 even
     RTS              ;+6 cycles
 
+
 MOVEMENT:
     LDA controller
-    AND u_butt | d_butt
+    LDX menumodes+4
+    LDY playermode
+
+    BEQ TMOVESET    ;if mode = 0 use titlescreen moveset, else use normal moveset
+
+    AND l_butt
+    BNE CHECKR
+    INC (playerptr+3)
+CHECKR:
+    AND r_butt
+    BNE CHECKB
+    DEC (playerptr+3)
+CHECKB:
+    AND b_butt
+    BNE CHECKA
+CHECKA:
+    AND a_butt
+    BNE CHECKU
+CHECKU:
+    AND u_butt
+    BNE CHECKD
+CHECKD:
+    AND d_butt
+    BNE MOVDONE
+
+
+
+TMOVESET:
+    AND a_butt
+    BNE TCHECKU
+
+TCHECKU:
+    AND u_butt
+    BNE TCHECKD
+    DEX
+    CMP #$00
+
+    LDY menumodes, X
+    STY (playerptr)
+
+TCHECKD:
+    AND d_butt
+    BNE MOVDONE
+    INX
+    CMP #$03
+
+    LDY menumodes, X
+    STY (playerptr)
+
+MOVDONE:
     RTS
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
