@@ -42,7 +42,8 @@ controller2 .rs 1
 worldptr    .rs 2
 playerptr   .rs 2
 
-menumodes   .rs 5
+menuoption  .rs 1
+menumodes   .rs 4
 
 r_butt  = 1 << 0
 l_butt  = 1 << 1
@@ -52,12 +53,6 @@ start   = 1 << 4
 select  = 1 << 5
 b_butt  = 1 << 6
 a_butt  = 1 << 7
-
-    .macro AMP
-    LDA \1
-    AND \2
-    CMP \2
-    .endm
 
     ;13 cycles
     .macro STZ ; STZ $LLHH
@@ -134,17 +129,7 @@ CLEARMEM:
     STA $0200, X ;storing a value other than 0 so sprites dont appear on-screen
     LDA #$00
     INX
-    BNE CLEARMEM 
-
-    ;write the array
-    LDA #$5C
-    STA menumodes
-    LDA #$7C
-    STA menumodes+1
-    LDA #$9C
-    STA menumodes+2
-    LDA #$AC
-    STA menumodes+3
+    BNE CLEARMEM
 
     OAMUPDATE #$00, #$02
 
@@ -166,6 +151,15 @@ loadtitle:
     SETPTR worldptr, titlebin
     LDSPR titlesprite, $0200, #$04
     SETPTR playerptr, $0200
+    ;write the titlescreen array
+    LDA #$5C
+    STA menumodes
+    LDA #$7C
+    STA menumodes+1
+    LDA #$9C
+    STA menumodes+2
+    LDA #$AC
+    STA menumodes+3
     JMP BG
 loadworld:
     SETPTR worldptr, worldbin
@@ -298,6 +292,7 @@ READJOY1LOOP: ;111 cycles for 8 loops
 
 
 MOVEMENT:
+    
     LDA controller
     LDX menumodes+4
     LDY playermode
@@ -333,18 +328,20 @@ TMOVESET:
 TCHECKU:
     AND u_butt
     BNE TCHECKD
+    CPX #$00
+    BEQ tchecku_2
     DEX
-    CMP #$00
-
+tchecku_2:
     LDY menumodes, X
     STY (playerptr)
 
 TCHECKD:
     AND d_butt
     BNE MOVDONE
+    CPX #$03
+    BEQ tcheckd_2
     INX
-    CMP #$03
-
+tcheckd_2:
     LDY menumodes, X
     STY (playerptr)
 
