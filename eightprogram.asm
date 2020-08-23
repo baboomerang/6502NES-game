@@ -44,11 +44,6 @@ playerptr   .rs 2
 
 menumodes   .rs 5
 
-top  = $5C
-mid  = $7C
-bot  = $9C
-quit = $AC
-
 r_butt  = 1 << 0
 l_butt  = 1 << 1
 d_butt  = 1 << 2
@@ -141,14 +136,14 @@ CLEARMEM:
     INX
     BNE CLEARMEM 
 
-
-    LDA #top
+    ;write the array
+    LDA #$5C
     STA menumodes
-    LDA #mid
+    LDA #$7C
     STA menumodes+1
-    LDA #bot
+    LDA #$9C
     STA menumodes+2
-    LDA #quit
+    LDA #$AC
     STA menumodes+3
 
     OAMUPDATE #$00, #$02
