@@ -43,7 +43,6 @@ worldptr    .rs 2
 playerptr   .rs 2
 
 menuoption  .rs 1
-menumodes   .rs 4
 
 r_butt  = 1 << 0
 l_butt  = 1 << 1
@@ -133,7 +132,6 @@ CLEARMEM:
 
     OAMUPDATE #$00, #$02
 
-
     SETPPUADDR #$3F10
     LDX #$00
 LOADPALETTE:
@@ -143,31 +141,16 @@ LOADPALETTE:
     CPX #$20
     BNE LOADPALETTE
 
-
-MODESELECT:
-    LDA gamestate
-    BNE loadworld    ;if gamestate = 0 load title, if gamestate = 1 load world
-loadtitle:
-    SETPTR worldptr, titlebin
-    LDSPR titlesprite, $0200, #$04
-    SETPTR playerptr, $0200
-    ;write the titlescreen array
-    ;i could have written these to $0400 instead 
+    ;write titlescreen array
     LDA #$5C
-    STA menumodes
+    STA $0400
     LDA #$7C
-    STA menumodes+1
+    STA $0401
     LDA #$9C
-    STA menumodes+2
-    LDA #$AC
-    STA menumodes+3
-    JMP BG
-loadworld:
-    SETPTR worldptr, worldbin
-    LDSPR playerptr, $0200, #$16
-    SETPTR playerptr, $0200
+    STA $0402
 
 BG:
+    SETPTR worldptr, titlebin
     SETPPUADDR #$2000  ;set target address to first nametable
     LDX #$00
     LDY #$00
@@ -191,7 +174,6 @@ DONE:
 ;we have about 29780 cpu cycles to work with between each END OF RENDER
 ;and the rising edge of an NMI
 Engine:
-    JSR MOVEMENT
     JSR MUSICENGINE
     JMP Engine
 
@@ -207,28 +189,28 @@ NMI:
     ;total 18 cycles
     JSR READJOY1    ;133 cycles
 
-DRAW:
-    LDA drawflag
-    BEQ END
-    STZ drawflag
-
-DMA:
-    LDA spriteflag
-    BEQ NAME
-    STZ spriteflag
-    OAMUPDATE #$00, #$02
-
-NAME:
-    LDA nametblflag
-    BEQ SCROLL
-    STZ nametblflag
-    ;JSR DECOMPRESSOR       ;lz77 decompressor into memory
-    ;we have enough time to send ~180 bytes during vblank
-
-SCROLL:
-    LDA scrollflag
-    BEQ END
-    STZ scrollflag
+;DRAW:
+;    LDA drawflag
+;    BEQ END
+;    STZ drawflag
+;
+;DMA:
+;    LDA spriteflag
+;    BEQ NAME
+;    STZ spriteflag
+;    OAMUPDATE #$00, #$02
+;
+;NAME:
+;    LDA nametblflag
+;    BEQ SCROLL
+;    STZ nametblflag
+;    ;JSR DECOMPRESSOR       ;lz77 decompressor into memory
+;    ;we have enough time to send ~180 bytes during vblank
+;
+;SCROLL:
+;    LDA scrollflag
+;    BEQ END
+;    STZ scrollflag
 
 END: 
     PLA   ;4
@@ -252,7 +234,7 @@ MUSICENGINE:
 ;;;; SUBROUTINES       ;
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
-PPUWAIT:        ;this could be a macro tbh
+PPUWAIT:
     BIT PPUSTATUS
     BPL PPUWAIT
     RTS
@@ -261,15 +243,15 @@ ENABLEPPU:
     CLI            ;enable interrupts
     LDA #%10010000 ;enable nmi and use second chr set of tiles ($1000)
     STA PPUCTRL
-    LDA #%00011110 ;enable background, sprites, sprite on vblank border, greyscale=0
+    LDA #%00011110 ;enable background, sprites, sprites on vblankborder, greyscale=0
     STA PPUMASK
     RTS
 
 DISABLEPPU:
-    SEI
-    LDA #%00010000
+    SEI            ;disable interrupts
+    LDA #%00010000 ;disable nmi
     STA PPUCTRL
-    LDA #%00000000
+    LDA #%00000000 ;disable background, sprites, and sprites on vblankborder
     STA PPUMASK
     RTS
 
@@ -287,66 +269,6 @@ READJOY1LOOP: ;111 cycles for 8 loops
     ROL controller   ;rotate out of carry into variable                   ;5 odd
     BCC READJOY1LOOP ;carry will be 0 once all 8 buttons are loaded       ;3 even
     RTS              ;+6 cycles
-
-
-MOVEMENT:  
-    LDA #1
-    STA drawflag
-    STA spriteflag
-
-    LDA controller
-    LDX menumodes+4
-    LDY playermode
-
-    BNE NORMALMOVE    ;if mode = 0 use titlescreen moveset, else use normal moveset
-
-    AND a_butt
-    BNE TCHECKU
-
-TCHECKU:
-    AND u_butt
-    BNE TCHECKD
-    CPX #$00
-    BEQ tchecku_2
-    DEX
-tchecku_2:
-    LDY menumodes, X
-    STY (playerptr)
-TCHECKD:
-    AND d_butt
-    BNE MOVDONE
-    CPX #$03
-    BEQ tcheckd_2
-    INX
-tcheckd_2:
-    LDY menumodes, X
-    STY (playerptr)
-    JMP MOVDONE
-
-NORMALMOVE:
-    AND l_butt
-    BNE CHECKR
-    INC (playerptr+3)
-CHECKR:
-    AND r_butt
-    BNE CHECKB
-    DEC (playerptr+3)
-CHECKB:
-    AND b_butt
-    BNE CHECKA
-CHECKA:
-    AND a_butt
-    BNE CHECKU
-CHECKU:
-    AND u_butt
-    BNE CHECKD
-CHECKD:
-    AND d_butt
-    BNE MOVDONE
-
-    JMP MOVDONE
-MOVDONE:
-    RTS
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; DATA BANKS        ;
