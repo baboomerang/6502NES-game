@@ -54,7 +54,7 @@ b_butt  = 1 << 6
 a_butt  = 1 << 7
 
     ;13 cycles
-    .macro STZ ; STZ $LLHH
+    .macro STZ ; STZ $HHLL
     PHA        ;3
     LDA #$00   ;2
     STA \1     ;store zerovalue ;4
@@ -62,7 +62,7 @@ a_butt  = 1 << 7
     .endm
 
     ;12 cycles
-    .macro OAMUPDATE ; OAMUPDATE #i, #i 
+    .macro OAMUPDATE ; OAMUPDATE #LL, #HH 
     LDA \1
     STA OAMADDR ;write lowbyte $XXLL of the address first
     LDA \2
@@ -87,7 +87,7 @@ a_butt  = 1 << 7
     ;257 cpu cycles = 2+(4+5+2+2+3)*16-1 , with sprite length 16
     ;formula: 16x-1 where x is the length of sprite
     ;                  source  dest. length
-    .macro LDSPR ;LDSPR $LLHH, $LLHH, #i
+    .macro LDSPR ;LDSPR $HHLL, $HHLL, #i
     LDX #$00
 .load\@
     LDA \1, X    ;copy indexed sprite by byte to shadow OAM
@@ -144,14 +144,16 @@ LOADPALETTE:
     ;write titlescreen array
     LDA #$5C
     STA $0400
-    LDA #$7C
+    LDA #$6C
     STA $0401
-    LDA #$9C
+    LDA #$7C
     STA $0402
+    LDSPR titlesprite, $0200, #4
+    SETPTR playerptr, $0200
 
 BG:
     SETPTR worldptr, titlebin
-    SETPPUADDR #$2000  ;set target address to first nametable
+    SETPPUADDR #$2000   ;set target address to first nametable
     LDX #$00
     LDY #$00
 WRITEBG:
@@ -174,7 +176,10 @@ DONE:
 ;we have about 29780 cpu cycles to work with between each END OF RENDER
 ;and the rising edge of an NMI
 Engine:
+    JSR MOVEMENT
     JSR MUSICENGINE
+
+    JSR PPUWAIT
     JMP Engine
 
 ;PREVBLANK: 262 scanlines per frame, 341 PPU cycles per line, 1 pixel per clock
@@ -187,30 +192,16 @@ NMI:
     TYA   ;2
     PHA   ;3
     ;total 18 cycles
+    BIT PPUSTATUS   ;reset latch
     JSR READJOY1    ;133 cycles
 
-;DRAW:
-;    LDA drawflag
-;    BEQ END
-;    STZ drawflag
-;
-;DMA:
-;    LDA spriteflag
-;    BEQ NAME
-;    STZ spriteflag
-;    OAMUPDATE #$00, #$02
-;
-;NAME:
-;    LDA nametblflag
-;    BEQ SCROLL
-;    STZ nametblflag
-;    ;JSR DECOMPRESSOR       ;lz77 decompressor into memory
-;    ;we have enough time to send ~180 bytes during vblank
-;
-;SCROLL:
-;    LDA scrollflag
-;    BEQ END
-;    STZ scrollflag
+    LDA spriteflag
+    BEQ END
+    
+    OAMUPDATE #$00, #$02
+
+    LDA #0
+    STA spriteflag  ;latch the dma flag when done
 
 END: 
     PLA   ;4
@@ -257,7 +248,7 @@ DISABLEPPU:
 
 ;improved controller read code: 133 cycles compared to 154 cycles
 ;uses only 1 register and is also DPCM safe
-READJOY1:     ;16 cycles first part
+READJOY1:       ;16 cycles first part
     LDA #1           ;                                                    ;2 odd
     STA controller   ;set up ring counter with 1 as start                 ;3 even
     STA JOY1         ;enable button polling                               ;4 even 
@@ -269,6 +260,32 @@ READJOY1LOOP: ;111 cycles for 8 loops
     ROL controller   ;rotate out of carry into variable                   ;5 odd
     BCC READJOY1LOOP ;carry will be 0 once all 8 buttons are loaded       ;3 even
     RTS              ;+6 cycles
+
+MOVEMENT:
+    LDX menuoption
+    LDA controller
+    BEQ MOVEND
+    LDY #1
+    STY spriteflag
+MOVEUP:
+    BIT u_butt
+    BNE MOVEDOWN
+    CPX #$00
+    BCC MOVEDOWN
+    DEX
+MOVEDOWN:
+    BIT d_butt
+    BNE MOVEND
+    CPX #$02
+    BCS MOVEND
+    INX
+MOVEND:
+    LDA $0400, X
+    STX menuoption
+
+    LDY #0
+    STA [playerptr], Y
+    RTS
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; DATA BANKS        ;
