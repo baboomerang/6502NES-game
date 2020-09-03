@@ -35,14 +35,16 @@ nametblflag .rs 1
 scrollflag  .rs 1
 spriteflag  .rs 1
 
+menumode    .rs 1
 playermode  .rs 1
-controller  .rs 1
-controller2 .rs 1
+
+prev_pad    .rs 1
+curr_pad    .rs 1
+prev_pad2   .rs 1
+curr_pad2   .rs 1
 
 worldptr    .rs 2
 playerptr   .rs 2
-
-menuoption  .rs 1
 
 r_butt  = 1 << 0
 l_butt  = 1 << 1
@@ -192,6 +194,9 @@ NMI:
     TYA   ;2
     PHA   ;3
     ;total 18 cycles
+    LDA curr_pad
+    STA prev_pad
+
     BIT PPUSTATUS   ;reset latch
     JSR READJOY1    ;133 cycles
 
@@ -202,7 +207,6 @@ NMI:
 
     LDA #0
     STA spriteflag  ;latch the dma flag when done
-
 END: 
     PLA   ;4
     TAY   ;2
@@ -250,39 +254,40 @@ DISABLEPPU:
 ;uses only 1 register and is also DPCM safe
 READJOY1:       ;16 cycles first part
     LDA #1           ;                                                    ;2 odd
-    STA controller   ;set up ring counter with 1 as start                 ;3 even
+    STA curr_pad     ;set up ring counter with 1 as start                 ;3 even
     STA JOY1         ;enable button polling                               ;4 even 
     LSR A            ;set accumulator to 0                                ;2 even
     STA JOY1         ;disable polling                                     ;4 even
 READJOY1LOOP: ;111 cycles for 8 loops
     LDA JOY1         ;load 1 bit at a time. Total 8 bits need to be read  ;4 even
     LSR A            ;accumulator into carry                              ;2 even
-    ROL controller   ;rotate out of carry into variable                   ;5 odd
+    ROL curr_pad     ;rotate out of carry into variable                   ;5 odd
     BCC READJOY1LOOP ;carry will be 0 once all 8 buttons are loaded       ;3 even
     RTS              ;+6 cycles
 
 MOVEMENT:
-    LDX menuoption
-    LDA controller
-    BEQ MOVEND
+    LDX menumode    ;load menu selection index
+    LDA curr_pad    ;load current pad buttons
+    BEQ MOVEND      ;skip entire subroutine if pad is empty
     LDY #1
-    STY spriteflag
-MOVEUP:
+    STY spriteflag  ;set sprite flag to call an oam update on next frame
+CHECKUP:
     BIT u_butt
-    BNE MOVEDOWN
-    CPX #$00
-    BCC MOVEDOWN
+    BNE CHECKDOWN   ;if current pad does not have the button pressed, skip logic
+    EOR prev_pad
+
     DEX
-MOVEDOWN:
+CHECKDOWN:
+    LDA curr_pad    ;eor destroyed the accumulator value, refresh it here
     BIT d_butt
-    BNE MOVEND
-    CPX #$02
-    BCS MOVEND
+    BNE MOVEND      ;if current pad does not have the button pressed, skip logic
+    EOR prev_pad
+    BIT d_butt
+    BNE MOVEND      ;if previous pad also had the button pressed, do not move again
     INX
 MOVEND:
     LDA $0400, X
-    STX menuoption
-
+    STX menumode
     LDY #0
     STA [playerptr], Y
     RTS
