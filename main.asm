@@ -253,7 +253,7 @@ DISABLEPPU:
 
 ;improved controller read code: 133 cycles compared to 154 cycles
 ;uses only 1 register and is also DPCM safe
-;bit        7   6     5       4      3   2       1       0    
+;bit        7   6      5      4      3    2       1        0 
 ;button 	A 	B 	Select 	Start 	Up 	Down 	Left 	Right 
 READJOY1:       ;16 cycles first part
     LDA #1           ;                                                    ;2 odd
@@ -292,7 +292,6 @@ PLAYERMOVEMENT:
 @up:
     BIT u_butt
     BNE +
-    CPX
 @down:
     BIT d_butt
     BNE +
@@ -301,6 +300,11 @@ PLAYERMOVEMENT:
     STX menumode
     LDY #0
     STA (playerptr), Y
+    RTS
+
+ENEMYMOVEMENT:
+    ;this code will be complex and all encompassing
+    ;all active entities will have a lookup table for movement and behavior
     RTS
     .pad $E000
 
