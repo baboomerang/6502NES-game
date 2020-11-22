@@ -18,11 +18,12 @@ else
     #dumb solution but nesasm always returns 0 even if it errors
 
     asm6f -c "${filename}.asm"
-    
-    if [ $? -ne 0 ]; then
-        echo "check errors"
-    fi
 
     mv "${filename}.bin" "${filename}.nes"
+    if [ $? -ne 0 ]; then
+        echo "build failed"
+        exit 1
+    fi
+
     mesen "${filename}.nes"
 fi

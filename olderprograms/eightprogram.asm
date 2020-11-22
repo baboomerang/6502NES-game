@@ -1,7 +1,7 @@
     .inesprg 1  ;1x16kb PRG code
     .ineschr 1  ;1x8kb CHR DATA
     .inesmap 0  ;mapper 0 = NROM, no bank switching
-    .inesmir 1  ;background/vertical mirroring
+    .inesmir 1  ;backgorund/vertical mirroring
 
 PPUCTRL		 = $2000
 PPUMASK 	 = $2001
@@ -24,30 +24,27 @@ DMC_FREQ	 = $4010
 SPR_DMA		 = $4014 ;OAMDMA
 OAMDMA		 = $4014
 
-JOY1	     = $4016
+JOY1		 = $4016
 JOY2		 = $4017
 APU_IO		 = $4018 ;goes from ($4018-$401F) CPU test functions/testmode
 
-    .enum $0000
-gamestate    .dsb 1
-drawflag     .dsb 1
-nametblflag  .dsb 1
-scrollflag   .dsb 1
-spriteflag   .dsb 1
+    .rsset $0000
+gamestate   .rs 1
+drawflag    .rs 1
+nametblflag .rs 1
+scrollflag  .rs 1
+spriteflag  .rs 1
 
-menumode     .dsb 1
-playermode   .dsb 1
+menumode    .rs 1
+playermode  .rs 1
 
-prev_pad     .dsb 1
-curr_pad     .dsb 1
-prev_pad2    .dsb 1
-curr_pad2    .dsb 1
+prev_pad    .rs 1
+curr_pad    .rs 1
+prev_pad2   .rs 1
+curr_pad2   .rs 1
 
-worldptr     .dsb 2
-playerptr    .dsb 2
-    .ende
-
-;;;;;;;;;;;;;;;;;;;;;;; CONSTANTS
+worldptr    .rs 2
+playerptr   .rs 2
 
 r_butt  = 1 << 0
 l_butt  = 1 << 1
@@ -58,44 +55,45 @@ select  = 1 << 5
 b_butt  = 1 << 6
 a_butt  = 1 << 7
 
-;;;;;;;;;;;;;;;;;;;;;;; MACROS
-
-    .macro OAMUPDATE j
-    LDA #<j      ;get the lowbyte of j
-    STA OAMADDR  
-    LDA #>j      ;get the highbyte of j
-    STA OAMDMA   ;begin transfer to ppu
+    ;12 cycles
+    .macro OAMUPDATE ; OAMUPDATE #LL, #HH 
+    LDA \1
+    STA OAMADDR ;write lowbyte $XXLL of the address first
+    LDA \2
+    STA OAMDMA  ;write highbyte, begin transfer immediately $HHXX
     .endm
 
-    .macro SETPTR ptr, data
-    LDA #<data    ;get the lowbyte of data
-    STA ptr
-    LDA #>data    ;get the highbyte of data
-    STA ptr+1     ;result is little-endian pointer to target address
+    .macro SETPTR ;SETPTR ptr*, $HHLL
+    LDA #LOW(\2)
+    STA \1        ;set the low byte of pointer to lowbyte of world address
+    LDA #HIGH(\2)
+    STA \1+1      ;set the high byte of pointer to highbyte of world address
     .endm
 
-    .macro SETPPUADDR j
-    BIT PPUSTATUS    ;reset ppu latch (for safety)
-    LDA #>j          ;store highbyte FIRST
+    .macro SETPPUADDR ;SETPPUADDR $HHLL
+    BIT PPUSTATUS ;reset latch
+    LDA #HIGH(\1) ;$3f write the high byte of address first
     STA PPUADDR
-    LDA #<j          ;then store lowbyte SECOND
+    LDA #LOW(\1)  ;$00 write the low byte of the address second
     STA PPUADDR
     .endm
-
-    .macro LDSPR spritedata, targetaddr, size
+    
+    ;257 cpu cycles = 2+(4+5+2+2+3)*16-1 , with sprite length 16
+    ;formula: 16x-1 where x is the length of sprite
+    ;                  source  dest. length
+    .macro LDSPR ;LDSPR $HHLL, $HHLL, #i
     LDX #$00
-    -:
-    LDA spritedata, X    ;load indexed copy of sprite to shadow oam
-    STA targetaddr, X    ;store that respectively in shadow oam 
+.load\@
+    LDA \1, X    ;copy indexed sprite by byte to shadow OAM
+    STA \2, X
     INX
-    CPX size             ;copy bytes until given size
-    BNE -
+    CPX \3       ;loop until specified size
+    BNE .load\@
     .endm
 
-;;;;;;;;;;;;;;;;;;;;;;; CODE
 
-    ;bank 0 (will be mapped at $C000-$DFFF)
-    .base $C000
+    .bank 0
+    .org $C000
 RESET:
     SEI         ;disable interrupts
     CLD         ;disable decimal mode
@@ -126,7 +124,7 @@ CLEARMEM:
     INX
     BNE CLEARMEM
 
-    OAMUPDATE #$0200
+    OAMUPDATE #$00, #$02
 
     SETPPUADDR #$3F00
     LDX #$00
@@ -144,41 +142,43 @@ LOADPALETTE:
     STA $0401
     LDA #$7C
     STA $0402
-    LDSPR titlesprite, #$0200, #4
-    SETPTR playerptr, #$0200
+    LDSPR titlesprite, $0200, #4
+    OAMUPDATE #$00, #$02
 
 BG:
     SETPTR worldptr, titlebin
     SETPPUADDR #$2000   ;set target address to first nametable
     LDX #$00
     LDY #$00
-@WRITEBG:
-    LDA (worldptr), Y
+WRITEBG:
+    LDA [worldptr], Y
     STA PPUDATA
     INY
     CPX #$03
-    BNE @CHECKY
+    BNE CHECKY
     CPY #$C0
-    BEQ @DONE
-@CHECKY:
+    BEQ DONE
+CHECKY:
     CPY #$00
-    BNE @WRITEBG
+    BNE WRITEBG
     INX
     INC (worldptr+1)    ;increment the high byte of the pointer
-    JMP @WRITEBG
-@DONE:
+    JMP WRITEBG
+DONE:
     JSR ENABLEPPU
 
+;we have about 29780 cpu cycles to work with between each END OF RENDER
+;and the rising edge of an NMI
 Engine:
     INC spriteflag
-
-    ;JSR PLAYERMOVEMENT
-    ;JSR ENEMYMOVEMENT
+    JSR MOVEMENT
     JSR MUSICENGINE
 
     JSR PPUWAIT
     JMP Engine
 
+;PREVBLANK: 262 scanlines per frame, 341 PPU cycles per line, 1 pixel per clock
+;ONCE NMI OCCURS: 2270 cycles between an NMI and START OF RENDER
 NMI:
     PHP   ;3
     PHA   ;3
@@ -194,13 +194,13 @@ NMI:
     JSR READJOY1    ;133 cycles
 
     LDA spriteflag
-    BEQ +
-
-    OAMUPDATE #$0200
+    BEQ END
+    
+    OAMUPDATE #$00, #$02
 
     LDA #0
     STA spriteflag  ;latch the dma flag when done
-+: 
+END: 
     PLA   ;4
     TAY   ;2
     PLA   ;4
@@ -209,11 +209,6 @@ NMI:
     PLP   ;4
     ;total 22 cycles
     RTI   ;6
-
-IRQ:
-    ;irrelevant since NROM is hardwired with no IRQ nor bank-switch support
-    ;leaving it here incase it inspires someone else
-    RTI
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;; MUSIC ENGINE      ;
@@ -248,78 +243,40 @@ DISABLEPPU:
     STA PPUMASK
     RTS
 
-; improved controller read code: 133 cycles compared to 154 cycles
-; uses only 1 register and is also DPCM safe
-;    bit:   7 6 5 4 3 2 1 0 
-; button: 	A B S S U D L R
-
+;improved controller read code: 133 cycles compared to 154 cycles
+;uses only 1 register and is also DPCM safe
 READJOY1:       ;16 cycles first part
     LDA #1           ;                                                    ;2 odd
     STA curr_pad     ;set up ring counter with 1 as start                 ;3 even
     STA JOY1         ;enable button polling                               ;4 even 
     LSR A            ;set accumulator to 0                                ;2 even
     STA JOY1         ;disable polling                                     ;4 even
--:                   ;111 cycles for 8 loops
+READJOY1LOOP: ;111 cycles for 8 loops
     LDA JOY1         ;load 1 bit at a time. Total 8 bits need to be read  ;4 even
     LSR A            ;accumulator into carry                              ;2 even
     ROL curr_pad     ;rotate out of carry into variable                   ;5 odd
-    BCC -            ;carry will be 0 once all 8 buttons are loaded       ;3 even
+    BCC READJOY1LOOP ;carry will be 0 once all 8 buttons are loaded       ;3 even
     RTS              ;+6 cycles
 
-P_MOVEMENT:
-    LDX curr_pad
-    BEQ @END
+MOVEMENT:
+    LDA curr_pad    ;load current pad buttons
+    BEQ MOVEND      ;skip entire subroutine if pad is empty
+    LDY #1
+    STY spriteflag  ;set sprite flag to call an oam update on next frame
 
-@END:
-    RTS
-
-T_MOVEMENT:
-    LDX menumode
-    LDA curr_pad
-    BEQ @END
-@a:
-    BIT a_butt
-    BNE +
-@b:
-    BIT b_butt
-    BNE +
-@start_:
-    BIT start
-    BNE +
-@select_:
-    BIT select
-    BNE +
-@left:
-    BIT l_butt
-    BNE +
-@right:
-    BIT r_butt
-    BNE +
-@up:
-    BIT u_butt
-    BNE ++
-@down:
-    BIT d_butt
-    BNE +
-@END:
+MOVEND:
     LDA $0400, X
     STX menumode
     LDY #0
-    STA (playerptr), Y
+    STA [playerptr], Y
     RTS
 
-ENEMYMOVEMENT:
-    ;this code will be complex and all encompassing
-    ;all active entities will have a lookup table for movement and behavior
-    RTS
-    .pad $E000
+;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; DATA BANKS        ;
+;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; GRAPHICS DATA        ;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-    ;bank 1 (will be mapped $E000 - $FFFF)
-    .base $E000
+    .bank 1
+    .org $E000
 palettedata:
     .db $FF,$36,$25,$14   ;background palette
     .db $FF,$35,$36,$37
@@ -329,26 +286,26 @@ palettedata:
     .db $0F,$02,$38,$26
     .db $0F,$29,$15,$14
     .db $0F,$02,$38,$26
+
 titlesprite:
     .db $5C,$75,$03,$32
+
 playersprite:
     .db $7A,$32,$00,$7A
     .db $7A,$33,$00,$82
     .db $82,$34,$00,$7A
     .db $82,$35,$00,$82
+
 titlebin:
     .incbin "titlescreen.bin"
 worldbin:
     .incbin "world.bin"
 
     .org $FFFA
-    .dw NMI
-    .dw RESET
-    .dw IRQ
+    .dw NMI     ; processor will jump to the label NMI
+    .dw RESET   ; when the processor first turns on or is reset, jump to lebel RESET
+    .dw 0       ; external IRQ disabled
 
-    ;bank 2 (will be mapped to $0000-$1FFF in the PPU)
-    ;somehow it is implied by asm6f that any chr data
-    ;at the end of the reset vector declaration will
-    ;go automatically in the PPU - thank you NROM mapper
-    ;its so dumb but whatever. nobody talks about this
-    .incbin "mario2.chr" 
+    .bank 2
+    .org $0000
+    .incbin "mario2.chr"
