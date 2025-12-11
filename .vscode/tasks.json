@@ -1,0 +1,43 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "ca65",
+			"problemMatcher": [
+				"$ca65",
+				"$ld65"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": false
+			},
+			"label": "ca65: Build without config"
+		},
+		{
+			"label": "FCEUX: Run ROM",
+			"type": "shell",
+			"command": "fceux", // Replace with the actual path to your fceux executable if it's not in your system's PATH
+			"args": [
+				"${fileDirname}\\${fileBasenameNoExtension}.nes" // Assumes the output is a .nes file in the same directory as the source file
+			],
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated" // Keeps the emulator output in its own terminal panel
+			},
+			"dependsOn": [
+				"ca65: Build without config" // This ensures the build runs before the emulator
+			]
+		},
+		{
+			"label": "Build and Run (Default)",
+			"dependsOn": [
+				"FCEUX: Run ROM" // Running "FCEUX: Run ROM" automatically triggers its dependency, "ca65: Build"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true // Set this composite task as the new default build task
+			},
+			"problemMatcher": []
+		}
+	]
+}
