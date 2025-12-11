@@ -1,4 +1,4 @@
-.include "../include/nes.inc"
+.include "../include/global.inc"
 
 ;-------------------------------------------------
 ; Init Code Segment
@@ -34,7 +34,6 @@ reset_handler:
     lda #00
     inx
     bne @clearmem
-    oamupdate $0200
 
     ; Wait another frame for the PPU to warm up (should be good now)
     ; Tip: if you want to wait for vblank again after this reset, then you should wait for NMI to run.

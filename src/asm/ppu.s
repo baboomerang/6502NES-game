@@ -1,7 +1,9 @@
-; Wait until PPU is ready to render
-ppuwait:
-    bit PPUSTATUS
-    bpl ppuwait
+.include "../include/global.inc"
+
+ppu_wait_for_vblank:
+  :
+    bit PPUSTATUS       ; Wait until VBLANK NMI flag (bit 7) is set
+    bpl :-        
     rts
 
 ; Decompress RLE-Encoded data and write data to PPUDATA

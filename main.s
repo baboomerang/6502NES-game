@@ -16,9 +16,6 @@ nes2end
 .addr reset_handler   ; When the processor first turns on or is reset, it will jump to the label reset:
 .addr 0               ; External interrupt IRQ (unused)
 
-; "nes" linker config requires a STARTUP section, even if it's empty
-.segment "STARTUP"
-
 ; Main code segment for the program
 .segment "CODE"
 
