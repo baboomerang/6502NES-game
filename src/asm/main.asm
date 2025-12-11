@@ -43,28 +43,31 @@
     ;bank 0 (will be mapped at $8000-$bfff)
     .org $8000
 reset_handler:
-    sei             ;disable maskable interrupts
-    cld             ;disable decimal mode
+    sei             ; Disable maskable interrupts (IRQ) during initialization
+    cld             ; Disable decimal mode (standard 6502 practice, though the NES 2A03 CPU ignores it)
     ldx #$40
-    stx $4017       ;disable APU frame irq
+    stx $4017       ; Disable APU frame irq
     ldx #$ff
-    txs             ;init stack
-    inx
-    stx PPUCTRL     ;disable nmi
-    stx PPUMASK     ;disable rendering
-    stx DMC_FREQ    ;disable dmc irq
+    txs             ; Transfer X to Stack Pointer (SP is now $01FF, the top of the stack)
+    inx             ; Increment X from $FF to $00 (due to overflow)
+    stx PPUCTRL     ; Disable NMI
+    stx PPUMASK     ; Disable rendering (blank screen)
+    stx DMC_FREQ    ; Disable DMC IRQ
+
+    ; Wait for the PPU to warm up twice
     jsr ppuwait
-    txa
+
+    txa             ; Set register A equal to the value of register X (which is $00). Set A to 0 basically.
 @clearmem:
-    sta $0000, x
-    sta $0100, x
-    sta $0300, x
+    sta $0000, x    ; Clear Zero Page ($0000 - $00FF)
+    sta $0100, x    ; Clear Stack area ($0100 - $01FF)
+    sta $0300, x    ; Clear general RAM ($0300 - $03FF)
     sta $0400, x
     sta $0500, x
     sta $0600, x
-    sta $0700, x
+    sta $0700, x    ; Clear general RAM up to $07FF
     lda #$ff
-    sta $0200, x    ;ff value moves sprites offscreen
+    sta $0200, x    ; Store $FF to OAM Shadow RAM area: Moves all sprites offscreen by default (Y-coord $FF)
     lda #00
     inx
     bne @clearmem
