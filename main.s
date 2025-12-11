@@ -1,24 +1,20 @@
-.include "/src/include/nes2header.inc"
+.include "src/include/nes2header.inc"
 
 ;-------------------------------------------------
 ; iNES header using nes2header.inc macros
 ;-------------------------------------------------
 ; These macros set internal variables within the nes2header.inc
-nes2mapper 0        ; Mapper 0 (NROM)
-nes2prg 32768       ; 2x16KB PRG ROM
-nes2chr 8192        ; 1x8KB CHR ROM
-nes2arrange 'V'     ; Vertical mirroring
-nes2tv 'N'          ; NTSC TV system
-
+nes2mapper 0          ; Mapper 0 (NROM)
+nes2prg 32768         ; 2x16KB PRG ROM
+nes2chr 8192          ; 1x8KB CHR ROM
+nes2arrange 'V'       ; Vertical mirroring
+nes2tv 'N'            ; NTSC TV system
 nes2end
 
 .segment "VECTORS"
-  ;; When an NMI happens (once per frame if enabled) the label nmi:
-  .addr nmi
-  ;; When the processor first turns on or is reset, it will jump to the label reset:
-  .addr reset
-  ;; External interrupt IRQ (unused)
-  .addr 0
+.addr nmi_handler     ; When an NMI happens (once per frame if enabled) the label nmi:
+.addr reset_handler   ; When the processor first turns on or is reset, it will jump to the label reset:
+.addr 0               ; External interrupt IRQ (unused)
 
 ; "nes" linker config requires a STARTUP section, even if it's empty
 .segment "STARTUP"
@@ -26,9 +22,9 @@ nes2end
 ; Main code segment for the program
 .segment "CODE"
 
-reset:
-  sei		; disable IRQs
-  cld		; disable decimal mode
+reset_handler:
+  sei		    ; disable IRQs
+  cld		    ; disable decimal mode
   ldx #$40
   stx $4017	; disable APU frame IRQ
   ldx #$ff 	; Set up stack
@@ -85,7 +81,7 @@ enable_rendering:
 forever:
   jmp forever
 
-nmi:
+nmi_handler:
   ldx #$00 	; Set SPR-RAM address to 0
   stx $2003
 @loop:	lda hello, x 	; Load the hello message into SPR-RAM
@@ -94,6 +90,9 @@ nmi:
   cpx #$1c
   bne @loop
   rti
+
+irq_handler:
+    rti
 
 hello:
   .byte $00, $00, $00, $00 	; Why do I need these here?

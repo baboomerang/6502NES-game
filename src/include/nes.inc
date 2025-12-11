@@ -3,8 +3,9 @@
 ;-------------------------------------------------
 
 .ifndef _NES_IO_
-_NES_IO_ = 1
+.define _NES_IO_ = 1
 
+; MMIO constants
 PPUCTRL		   = $2000
 PPUMASK 	   = $2001
 PPUSTATUS	   = $2002
@@ -16,12 +17,17 @@ PPU_SCROLL_REG = $2005 ;alias for PPUSCROLL
 PPUSCROLL	   = $2005
 PPUADDR		   = $2006
 PPUDATA		   = $2007
+
 SND_DELTA_REG  = $4010 ;alias for DMC_FREQ
 DMC_FREQ	   = $4010
 SPR_DMA		   = $4014 ;alias for OAMDMA
 OAMDMA		   = $4014
+SND_CHANNEL    = $4015
+
 JOY1	       = $4016
 JOY2		   = $4017
+
+; Joypad button masks
 PAD_A          = %10000000
 PAD_B          = %01000000
 PAD_SELECT     = %00100000
@@ -31,7 +37,7 @@ PAD_DOWN       = %00000100
 PAD_LEFT       = %00000010
 PAD_RIGHT      = %00000001
 
-;PPUCTRL SETTINGS
+;PPUCTRL settings
 NT_2000        = %00000000
 NT_2400        = %00000001
 NT_2800        = %00000010
@@ -44,7 +50,7 @@ OBJ_8X16       = %00100000 ;enable 8x16 mode for sprites
 AGENT_MODE     = %01000000 ;ppu master/slave select
 VBLANK_NMI     = %10000000
 
-;PPUMASK SETTINGS
+; PPUMASK settings
 GREYSCALE      = %00000001
 BG_OFF         = %00000000 ;bit 3 (4th from the right) is 0
 BG_CLIPPED     = %00001000 ;bit 3 is 1, bg is clipped on leftmost 8 pixels of screen
