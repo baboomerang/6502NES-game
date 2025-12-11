@@ -18,7 +18,8 @@
 			"type": "shell",
 			"command": "fceux", // Replace with the actual path to your fceux executable if it's not in your system's PATH
 			"args": [
-				"${fileDirname}\\${fileBasenameNoExtension}.nes" // Assumes the output is a .nes file in the same directory as the source file
+				"main.nes"
+				// "${fileDirname}\\${fileBasenameNoExtension}.nes" // Assumes the output is a .nes file in the same directory as the source file
 			],
 			"presentation": {
 				"reveal": "always",
