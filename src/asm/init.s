@@ -36,6 +36,10 @@ reset_handler:
     inx
     bne ::loop
 
+    ; Clear PPU OAM (sprites)
+    ; OAM ($0200-$02FF) was set to #$FF earlier
+    PPU_BEGIN_OAM_DMA_TRANSFER $0200
+
     ; Wait another frame for the PPU to warm up (should be good now)
     ; Tip: if you want to wait for vblank again after this reset, then you should wait for NMI to run.
     jsr ppu_wait_for_vblank

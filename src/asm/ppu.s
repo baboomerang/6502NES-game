@@ -15,6 +15,17 @@ ppu_wait_for_vblank:
     bpl ::check_status
     rts
 
+ppu_clear_oam:
+    lda #$ff            ; Load the value $FF (off-screen Y position)
+    ldx #$00            ; Start index at 0
+::clear_loop:
+    sta $0200, x        ; Store $FF into the buffer (this sets the Y coord for a sprite)
+    inx                 ; Increment X
+    cpx #$ff            ; Check if X is 256 (wraps from $FF to $00 and sets Z flag)
+    bne ::clear_loop    ; Loop until all 256 bytes of OAM_buffer have $FF
+    PPU_BEGIN_OAM_DMA_TRANSFER $0200
+    rts
+
 ppu_load_palette:
     ; (Code that writes 32 bytes from a palette table to PPUDATA)
     lda #>($3F00)

@@ -13,7 +13,7 @@
 .global main, nmi_handler, irq_handler
 
 ; register ppu functions (found in ppu.s)
-.global ppu_wait_for_vblank, ppu_load_palette
+.global ppu_wait_for_vblank, ppu_load_palette, ppu_clear_oam
 .global palette_data
 
 ; -----------------------------------------------------------
