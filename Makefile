@@ -7,7 +7,8 @@ BIN_DIR   := bin
 INC_DIR   := src/include
 
 TARGET    := $(BIN_DIR)/main.nes
-CFG_FILE  := nes.cfg
+CFG_FILE  := nrom256-without-dmc.cfg 
+EMULATOR := fceux
 
 # Find all assembly source files (.s) in the source directory
 SRCS      := $(wildcard $(SRC_DIR)/*.s)
@@ -22,9 +23,9 @@ CC      := cl65 # Unified driver
 
 # Compiler/Assembler Flags
 AFLAGS  := -I $(INC_DIR)
-LFLAGS  := -C $(CFG_FILE) --target nes
+LFLAGS  := -C $(CFG_FILE)
 
-.PHONY: all clean
+.PHONY: all clean run
 
 all: directories $(TARGET)
 
@@ -38,6 +39,11 @@ $(TARGET): $(OBJS)
 # Rule to assemble individual .s files into .o files
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.s
 	$(AS) $(AFLAGS) $< -o $@
+
+# Rule to run the final .nes file with the given EMULATOR
+run: $(TARGET)
+	@echo "Running $(TARGET) in $(EMULATOR)..."
+	$(EMULATOR) $(TARGET) & # The '&' runs the emulator in the background (optional)
 
 clean:
 	rm -rf $(BUILD_DIR) $(BIN_DIR)

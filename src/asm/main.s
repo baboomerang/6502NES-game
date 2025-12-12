@@ -1,4 +1,12 @@
-.include "src/include/nes2header.inc"
+;-------------------------------------------------
+; main.s
+; Main Entrypoint for NES
+;-------------------------------------------------
+.include "../include/nes2header.inc"
+.include "../include/global.inc"
+
+.import ppu_load_palette
+.global palette_data
 
 ;-------------------------------------------------
 ; iNES header using nes2header.inc macros
@@ -16,32 +24,15 @@ nes2end
 .addr reset_handler   ; When the processor first turns on or is reset, it will jump to the label reset:
 .addr 0               ; External interrupt IRQ (unused)
 
-; Main code segment for the program
+; Main code segment for the whole project
 .segment "CODE"
-
 main:
-load_palettes:
-  lda $2002
-  lda #$3f
-  sta $2006
-  lda #$00
-  sta $2006
-  ldx #$00
-@loop:
-  lda palettes, x
-  sta $2007
-  inx
-  cpx #$20
-  bne @loop
-
-enable_rendering:
-  lda #%10000000	; Enable NMI
-  sta $2000
-  lda #%00010000	; Enable Sprites
-  sta $2001
-
-forever:
-  jmp forever
+  jsr ppu_load_palette
+  jsr ppu_wait_for_vblank
+  PPU_ENABLE_RENDERING
+ :
+  nop
+  jmp :-
 
 nmi_handler:
   ldx #$00 	; Set SPR-RAM address to 0
@@ -65,7 +56,7 @@ hello:
   .byte $6c, $02, $00, $8A
   .byte $6c, $03, $00, $94
 
-palettes:
+palette_data:
   ; Background Palette
   .byte $0f, $00, $00, $00
   .byte $0f, $00, $00, $00

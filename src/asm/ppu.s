@@ -1,46 +1,33 @@
+;-------------------------------------------------
+; src/asm/ppu.s
+; PPU Management Subroutines
+;-------------------------------------------------
 .include "../include/global.inc"
+.import palette_data
 
+.segment "ZEROPAGE"
+pointer: .res 1
+
+.segment "CODE"
 ppu_wait_for_vblank:
   :
     bit PPUSTATUS       ; Wait until VBLANK NMI flag (bit 7) is set
     bpl :-        
     rts
 
-; Decompress RLE-Encoded data and write data to PPUDATA
-; Depends on: get_byte() function
-decode_rle:
-    ldy #00
-    jsr get_byte
-    sta rle_tag         ;first byte is rle tag delimiter
-@readbyte:
-    jsr get_byte
-    cmp rle_tag
-    beq @getlen         ;if the next value is a tag, get the length of repeats
-    sta PPUDATA         ;else copy single byte to PPU RAM
-    sta rle_val         ;and save a copy of that value
-    bne @readbyte
-@getlen:
-    jsr get_byte
-    cmp #00             ;if length is 0, then it is EOF
-    beq @end
-    tax                 ;else set x = length
-    lda rle_val         ;set accumulator to rle value
-@copyloop:
-    sta PPUDATA         ;write rle value until x = 0
-    dex
-    bne @copyloop
-    beq @readbyte       ;loop entire function until EOF (rle_tag, 00) byte pair
-@end:
-    rts
-
-; Get a byte from a 16-bit pointer and post-increment the Y register
-; Input: 16-bit pointer
-get_byte:
-    lda (pointer), y
-    iny
-    bne @end
-    inc (pointer+1)
-@end:
+ppu_load_palette:
+    ; (Code that writes 32 bytes from a palette table to PPUDATA)
+    lda #>($3F00)
+    sta PPUADDR
+    lda #<($3F00)
+    sta PPUADDR
+    ldx #$00
+  :
+    lda palette_data, x
+    sta PPUDATA
+    inx
+    cpx #$20
+    bne :-
     rts
 
 ; Copy bytes of data from the drawing buffer to PPUDATA
@@ -64,7 +51,7 @@ loadnametable_full:
     cpy #$00
     bne @write
     inx
-    inc (pointer+1)     ;increment the high byte of the pointer ONLY
+    inc pointer+1     ;increment the high byte of the pointer ONLY
     jmp @write
 @end:
     rts

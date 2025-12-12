@@ -10,11 +10,10 @@
 
 ; register interrupt handlers (found in init.s and main.s)
 .global reset_handler
-.global nmi_handler, irq_handler
-.global main
+.global main, nmi_handler, irq_handler
 
 ; register ppu functions (found in ppu.s)
-.global ppu_wait_for_vblank
+.global ppu_wait_for_vblank, ppu_load_palette
 
 ; -----------------------------------------------------------
 ; Macros
@@ -25,7 +24,7 @@
     sta ptr
     lda #>addr       ;get the high byte second
     sta ptr+1
-.endm
+.endmacro
 
 ; register ppu macros here (possibly used everywhere else in the project)
 .macro PPU_BEGIN_OAM_DMA_TRANSFER addr
@@ -33,7 +32,7 @@
     sta OAMADDR
     lda #>addr       ;get the high byte of addr
     sta OAMDMA       ;latch and begin transfer to ppu
-.endm
+.endmacro
 
 .macro PPU_SET_SCROLL xsel, ysel
     bit PPUSTATUS    ;reset ppu latch
@@ -41,7 +40,7 @@
     sta PPUSCROLL    ;set x scroll
     lda ysel
     sta PPUSCROLL    ;set y scroll
-.endm
+.endmacro
 
 .macro PPU_SET_ADDR addr
     bit PPUSTATUS    ;reset ppu latch
@@ -49,22 +48,22 @@
     sta PPUADDR
     lda #<addr       ;get the low byte second
     sta PPUADDR
-.endm
+.endmacro
 
 .macro PPU_ENABLE_RENDERING
     cli              ;clear interrupt-disable bit (enable interrupts)
-    lda #10000000b   ;enable nmi and use second set of chr tiles ($1000)
+    lda #%10000000   ;enable nmi and use second set of chr tiles ($1000)
     sta PPUCTRL
-    lda #00011110b   ;enable background, sprites, sprites on vblank border, disable grayscale
+    lda #%00011110   ;enable background, sprites, sprites on vblank border, disable grayscale
     sta PPUMASK
-.endm
+.endmacro
 
 .macro PPU_DISABLE_RENDERING
     sei              ;set interrupt-disable bit (disable interrupts)
-    lda #00000000b   ;disable nmi, still use second set of chr tiles
+    lda #%00000000   ;disable nmi, still use second set of chr tiles
     sta PPUCTRL
     lda #00          ;disable all graphics, enable grayscale mode
     sta PPUMASK
-.endm
+.endmacro
 
 .endif

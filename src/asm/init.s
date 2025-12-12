@@ -1,10 +1,11 @@
+;-------------------------------------------------
+; src/asm/init.s
+; NES Initialization Subroutines
+;-------------------------------------------------
 .include "../include/global.inc"
+.import main, ppu_wait_for_vblank
 
-;-------------------------------------------------
-; Init Code Segment
-;-------------------------------------------------
 .segment "CODE"
-
 reset_handler:
     sei             ; Disable maskable interrupts (IRQ) during initialization
     cld             ; Disable decimal mode (standard 6502 practice, though the NES 2A03 CPU ignores it)
@@ -18,7 +19,7 @@ reset_handler:
     stx DMC_FREQ    ; Disable DMC IRQ
 
     ; Wait one frame for the PPU to warm up
-    jsr ppuwait
+    jsr ppu_wait_for_vblank
 
     txa             ; Set register A equal to the value of register X (which is $00). Set A to 0 basically.
 @clearmem:
@@ -37,6 +38,6 @@ reset_handler:
 
     ; Wait another frame for the PPU to warm up (should be good now)
     ; Tip: if you want to wait for vblank again after this reset, then you should wait for NMI to run.
-    jsr ppuwait
+    jsr ppu_wait_for_vblank
 
-    jmp main_handler ; Jump to main game code
+    jmp main        ; Jump to main game code

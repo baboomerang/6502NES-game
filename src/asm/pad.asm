@@ -4,7 +4,9 @@
 ; button: 	A B S S U D L R
 
 ; Read buttons from controller 1
-readpad:
+
+.segment "CODE"
+pad_read_joy_1:
     lda #1
     sta curr_pad  ;set up ring counter with 1 as start
     sta JOY1      ;enable button polling
