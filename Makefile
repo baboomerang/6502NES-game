@@ -8,7 +8,7 @@ INC_DIR   := src/include
 
 TARGET    := $(BIN_DIR)/main.nes
 CFG_FILE  := nrom256-without-dmc.cfg 
-EMULATOR := fceux
+EMULATOR  := fceux
 
 # Find all assembly source files (.s) in the source directory
 SRCS      := $(wildcard $(SRC_DIR)/*.s)
@@ -43,7 +43,7 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.s
 # Rule to run the final .nes file with the given EMULATOR
 run: $(TARGET)
 	@echo "Running $(TARGET) in $(EMULATOR)..."
-	$(EMULATOR) $(TARGET) & # The '&' runs the emulator in the background (optional)
+	$(EMULATOR) $(TARGET) &
 
 clean:
 	rm -rf $(BUILD_DIR) $(BIN_DIR)

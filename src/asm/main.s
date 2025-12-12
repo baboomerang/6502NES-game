@@ -1,12 +1,9 @@
 ;-------------------------------------------------
-; main.s
+; src/asm/main.s
 ; Main Entrypoint for NES
 ;-------------------------------------------------
 .include "../include/nes2header.inc"
 .include "../include/global.inc"
-
-.import ppu_load_palette
-.global palette_data
 
 ;-------------------------------------------------
 ; iNES header using nes2header.inc macros
@@ -21,27 +18,27 @@ nes2end
 
 .segment "VECTORS"
 .addr nmi_handler     ; When an NMI happens (once per frame if enabled) the label nmi:
-.addr reset_handler   ; When the processor first turns on or is reset, it will jump to the label reset:
-.addr 0               ; External interrupt IRQ (unused)
+.addr reset_handler   ; When the processor first turns on or is reset, it will jump to the label reset_handler:
+.addr irq_handler     ; External interrupt IRQ (unused) this could also be set to $0
 
 ; Main code segment for the whole project
 .segment "CODE"
 main:
   jsr ppu_load_palette
-  jsr ppu_wait_for_vblank
   PPU_ENABLE_RENDERING
- :
+::forever:
   nop
-  jmp :-
+  jmp ::forever
 
 nmi_handler:
-  ldx #$00 	; Set SPR-RAM address to 0
+  ldx #$00 	         ; Set SPR-RAM address to 0
   stx $2003
-@loop:	lda hello, x 	; Load the hello message into SPR-RAM
+loop:	
+  lda hello, x ; Load the hello message into SPR-RAM
   sta $2004
   inx
   cpx #$1c
-  bne @loop
+  bne loop
   rti
 
 irq_handler:

@@ -10,9 +10,9 @@ pointer: .res 1
 
 .segment "CODE"
 ppu_wait_for_vblank:
-  :
+::check_status:
     bit PPUSTATUS       ; Wait until VBLANK NMI flag (bit 7) is set
-    bpl :-        
+    bpl ::check_status
     rts
 
 ppu_load_palette:
@@ -22,12 +22,12 @@ ppu_load_palette:
     lda #<($3F00)
     sta PPUADDR
     ldx #$00
-  :
+::load_pal_loop:
     lda palette_data, x
     sta PPUDATA
     inx
     cpx #$20
-    bne :-
+    bne ::load_pal_loop
     rts
 
 ; Copy bytes of data from the drawing buffer to PPUDATA

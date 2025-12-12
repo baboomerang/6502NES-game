@@ -14,6 +14,7 @@
 
 ; register ppu functions (found in ppu.s)
 .global ppu_wait_for_vblank, ppu_load_palette
+.global palette_data
 
 ; -----------------------------------------------------------
 ; Macros
