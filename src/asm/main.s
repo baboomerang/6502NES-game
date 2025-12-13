@@ -4,6 +4,7 @@
 ;-------------------------------------------------
 .include "../include/nes2header.inc"
 .include "../include/global.inc"
+.include "../include/zeropage.inc"
 
 ;-------------------------------------------------
 ; iNES header using nes2header.inc macros
@@ -24,6 +25,10 @@ nes2end
 ; Main code segment for the whole project
 .segment "CODE"
 main:
+  lda #<(palette_data)       ; Load low byte
+  sta ZP_PALETTE_ADDR        ; Store in the first byte
+  lda #>(palette_data)       ; Load high byte
+  sta ZP_PALETTE_ADDR + 1    ; Store in the second byte
   jsr ppu_load_palette
   PPU_ENABLE_RENDERING
 ::forever:

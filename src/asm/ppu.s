@@ -3,10 +3,7 @@
 ; PPU Management Subroutines
 ;-------------------------------------------------
 .include "../include/global.inc"
-.import palette_data
-
-.segment "ZEROPAGE"
-pointer: .res 1
+.include "../include/zeropage.inc"
 
 .segment "CODE"
 ppu_wait_for_vblank:
@@ -26,18 +23,28 @@ ppu_clear_oam:
     PPU_BEGIN_OAM_DMA_TRANSFER $0200
     rts
 
+; Example Usage:
+;    lda #<(palette_data_2) ; Load low byte
+;    sta ZP_SRC_ADDR        ; Store in the first byte
+;    lda #>(palette_data_2) ; Load high byte
+;    sta ZP_SRC_ADDR + 1    ; Store in the second byte
+;    jsr ppu_load_palette_regs
 ppu_load_palette:
-    ; (Code that writes 32 bytes from a palette table to PPUDATA)
-    lda #>($3F00)
+    lda #>(PPU_PALETTE_RAM_ADDRESS) ; Get the high byte ($3f)
     sta PPUADDR
-    lda #<($3F00)
+    lda #<(PPU_PALETTE_RAM_ADDRESS) ; Get the low byte ($00)
     sta PPUADDR
     ldx #$00
 ::load_pal_loop:
-    lda palette_data, x
+    ldy #$00
+    lda (ZP_PALETTE_ADDR), y
     sta PPUDATA
+    inc ZP_PALETTE_ADDR             ; Increment low byte (address ZP_SRC_ADDR)
+    bne :+
+    inc ZP_PALETTE_ADDR + 1         ; Increment high byte (address ZP_SRC_ADDR + 1) if previous increment overflowed FF to 00
+:
     inx
-    cpx #$20
+    cpx PALETTE_DEFAULT_LENGTH
     bne ::load_pal_loop
     rts
 
@@ -47,22 +54,23 @@ draw:
 
 ; Load a full uncompressed nametable (1024 bytes) from PRG rom to PPUDATA
 ; Input: 16-bit pointer
-loadnametable_full:
-    ldx #$00
-    ldy #$00
-@write:
-    lda (pointer), y    ;load byte at address (pointer + y)
-    sta PPUDATA
-    iny
-    cpx #$03
-    bne @check_y
-    cpy #$c0
-    beq @end
-@check_y:
-    cpy #$00
-    bne @write
-    inx
-    inc pointer+1     ;increment the high byte of the pointer ONLY
-    jmp @write
-@end:
-    rts
+;loadnametable_full:
+;    ldx #$00
+;    ldy #$00
+;@write:
+;    lda (pointer), y    ;load byte at address (pointer + y)
+;    sta PPUDATA
+;    iny
+;    cpx #$03
+;    bne @check_y
+;    cpy #$c0
+;    beq @end
+;@check_y:
+;    cpy #$00
+;    bne @write
+;    inx
+;    inc pointer+1     ;increment the high byte of the pointer ONLY
+;    jmp @write
+;@end:
+;    rts
+;
