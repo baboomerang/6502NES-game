@@ -30,21 +30,15 @@ ppu_clear_oam:
 ;    sta ZP_SRC_ADDR + 1    ; Store in the second byte
 ;    jsr ppu_load_palette_regs
 ppu_load_palette:
-    lda #>(PPU_PALETTE_RAM_ADDRESS) ; Get the high byte ($3f)
-    sta PPUADDR
-    lda #<(PPU_PALETTE_RAM_ADDRESS) ; Get the low byte ($00)
-    sta PPUADDR
-    ldx #$00
+    PPU_SET_ADDR PPU_PALETTE_RAM_ADDRESS
+    ldx #00
+    ldy #00
 ::load_pal_loop:
-    ldy #$00
+    ; TODO: handle the usecase where the palette data runs across a page boundary
     lda (ZP_PALETTE_ADDR), y
     sta PPUDATA
-    inc ZP_PALETTE_ADDR             ; Increment low byte (address ZP_SRC_ADDR)
-    bne :+
-    inc ZP_PALETTE_ADDR + 1         ; Increment high byte (address ZP_SRC_ADDR + 1) if previous increment overflowed FF to 00
-:
-    inx
-    cpx PALETTE_DEFAULT_LENGTH
+    iny
+    cpy #PALETTE_DEFAULT_LENGTH
     bne ::load_pal_loop
     rts
 

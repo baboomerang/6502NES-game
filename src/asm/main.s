@@ -25,10 +25,13 @@ nes2end
 ; Main code segment for the whole project
 .segment "CODE"
 main:
-  lda #<(palette_data)       ; Load low byte
-  sta ZP_PALETTE_ADDR        ; Store in the first byte
-  lda #>(palette_data)       ; Load high byte
-  sta ZP_PALETTE_ADDR + 1    ; Store in the second byte
+  ;lda #<(palette_data)       ; Load low byte
+  ;sta ZP_PALETTE_ADDR        ; Store in the first byte
+  ;lda #>(palette_data)       ; Load high byte
+  ;sta ZP_PALETTE_ADDR + 1    ; Store in the second byte
+  ;jsr ppu_load_palette
+  ;load background and sprite palettes
+  LOAD_PTR ZP_PALETTE_ADDR, palette_data
   jsr ppu_load_palette
   PPU_ENABLE_RENDERING
 ::forever:
