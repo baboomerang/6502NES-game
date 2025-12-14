@@ -42,20 +42,6 @@
 .endmacro
 
 ; --------------------------------------------------------------------
-; PPU_SET_SCROLL macro
-; Sets the PPU scrolling offsets (X and Y) using the $2005 register.
-; --------------------------------------------------------------------
-.macro PPU_SET_SCROLL xsel, ysel
-    bit PPUSTATUS       ; Reset the PPU address latch (guarantees next write is X scroll).
-    
-    lda xsel            ; Load the horizontal (X) scroll value.
-    sta PPUSCROLL       ; Write X scroll to $2005. This is the first write and flips the latch.
-    
-    lda ysel            ; Load the vertical (Y) scroll value.
-    sta PPUSCROLL       ; Write Y scroll to $2005, completing the scroll setup.
-.endmacro
-
-; --------------------------------------------------------------------
 ; PPU_SET_ADDR macro
 ; Sets the 16-bit VRAM address pointer within the PPU (via $2006).
 ; --------------------------------------------------------------------
@@ -67,6 +53,20 @@
     
     lda #<(addr)        ; Load the low byte of the address.
     sta PPUADDR         ; Write low byte to $2006, completing the 16-bit address set.
+.endmacro
+
+; --------------------------------------------------------------------
+; PPU_SET_SCROLL macro
+; Sets the PPU scrolling offsets (X and Y) using the $2005 register.
+; --------------------------------------------------------------------
+.macro PPU_SET_SCROLL xsel, ysel
+    bit PPUSTATUS       ; Reset the PPU address latch (guarantees next write is X scroll).
+    
+    lda xsel            ; Load the horizontal (X) scroll value.
+    sta PPUSCROLL       ; Write X scroll to $2005. This is the first write and flips the latch.
+    
+    lda ysel            ; Load the vertical (Y) scroll value.
+    sta PPUSCROLL       ; Write Y scroll to $2005, completing the scroll setup.
 .endmacro
 
 .macro PPU_ENABLE_RENDERING
