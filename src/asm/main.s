@@ -25,14 +25,15 @@ nes2end
 ; Main code segment for the whole project
 .segment "CODE"
 main:
-  ;lda #<(palette_data)       ; Load low byte
-  ;sta ZP_PALETTE_ADDR        ; Store in the first byte
-  ;lda #>(palette_data)       ; Load high byte
-  ;sta ZP_PALETTE_ADDR + 1    ; Store in the second byte
-  ;jsr ppu_load_palette
-  ;load background and sprite palettes
-  LOAD_PTR ZP_PALETTE_ADDR, palette_data
+  LOAD_PTR ZP_PALETTE_ADDR, title_palette
   jsr ppu_load_palette
+
+  ; TODO: load nametable
+  ;       simple name table - not compressed for now
+  ;       find a program to create a name table
+  ;       you might have to create your own graphics in your own CHR first
+  ;       then create the name table based on it
+
   PPU_ENABLE_RENDERING
 ::forever:
   nop
@@ -61,7 +62,7 @@ hello:
   .byte $6c, $02, $00, $8A
   .byte $6c, $03, $00, $94
 
-palette_data:
+title_palette:
   ; Background Palette
   .byte $0f, $00, $00, $00
   .byte $0f, $00, $00, $00
