@@ -23,24 +23,31 @@ ppu_clear_oam:
     PPU_BEGIN_OAM_DMA_TRANSFER $0200
     rts
 
+; --------------------------------------------------------
 ; Example Usage:
 ;    lda #<(palette_data_2) ; Load low byte
 ;    sta ZP_SRC_ADDR        ; Store in the first byte
 ;    lda #>(palette_data_2) ; Load high byte
 ;    sta ZP_SRC_ADDR + 1    ; Store in the second byte
-;    jsr ppu_load_palette_regs
+;    jsr ppu_load_palette
+; ---------------------------------------------------------
 ppu_load_palette:
     PPU_SET_ADDR PPU_PALETTE_RAM_ADDRESS
-    ldx #00
-    ldy #00
-::load_pal_loop:
-    ; TODO: handle the usecase where the palette data runs across a page boundary
+    ldx #00                 ; Length counter
+::load_palette_loop:
+    ldy #00                 ; Set Y to 0 every time for the indirect, indexed Y
     lda (ZP_PALETTE_ADDR), y
     sta PPUDATA
-    iny
+    ; Manually increment the source pointer stored in Zero Page RAM
+    inc ZP_PALETTE_ADDR             
+    bne ::skip              ; If low byte didn't wrap around (BNE), skip next line
+    inc ZP_PALETTE_ADDR + 1 ; Increment high byte if we crossed a 256-byte boundary
+::skip:                     ; The :+ means skip the next line only
+    ; Increment the length counter (X) and check against total length
+    inx                     ; X = X + 1
     cpy #PALETTE_DEFAULT_LENGTH
-    bne ::load_pal_loop
-    rts
+    bne ::load_palette_loop
+    rts 
 
 ; Copy bytes of data from the drawing buffer to PPUDATA
 draw:
