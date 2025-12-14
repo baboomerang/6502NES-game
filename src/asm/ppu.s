@@ -25,27 +25,25 @@ ppu_clear_oam:
 
 ; --------------------------------------------------------
 ; Example Usage:
-;    lda #<(palette_data_2) ; Load low byte
-;    sta ZP_SRC_ADDR        ; Store in the first byte
-;    lda #>(palette_data_2) ; Load high byte
-;    sta ZP_SRC_ADDR + 1    ; Store in the second byte
+;    lda #<(palette_data)       ; Load low byte
+;    sta ZP_PALETTE_ADDR        ; Store in the first byte
+;    lda #>(palette_data)       ; Load high byte
+;    sta ZP_PALETTE_ADDR + 1    ; Store in the second byte
 ;    jsr ppu_load_palette
 ; ---------------------------------------------------------
 ppu_load_palette:
     PPU_SET_ADDR PPU_PALETTE_RAM_ADDRESS
-    ldx #00                 ; Length counter
+    ldx #$00                        ; This is the length counter (starts at 0)
 ::load_palette_loop:
-    ldy #00                 ; Set Y to 0 every time for the indirect, indexed Y
-    lda (ZP_PALETTE_ADDR), y
+    ldy #$00                        ; Will always be 0 for this loop
+    lda (ZP_PALETTE_ADDR), y        ; Indirect, Indexed Y load to accumulator
     sta PPUDATA
-    ; Manually increment the source pointer stored in Zero Page RAM
-    inc ZP_PALETTE_ADDR             
-    bne ::skip              ; If low byte didn't wrap around (BNE), skip next line
-    inc ZP_PALETTE_ADDR + 1 ; Increment high byte if we crossed a 256-byte boundary
-::skip:                     ; The :+ means skip the next line only
-    ; Increment the length counter (X) and check against total length
-    inx                     ; X = X + 1
-    cpy #PALETTE_DEFAULT_LENGTH
+    inc ZP_PALETTE_ADDR             ; Increment low byte (address ZP_PALETTE_ADDR)
+    bne ::skip                      ; Skip if within a page boundary
+    inc ZP_PALETTE_ADDR + 1         ; Increment high byte (address ZP_PALETTE_ADDR + 1) if previous increment overflowed FF to 00
+::skip:
+    inx
+    cpx #PALETTE_DEFAULT_LENGTH     ; Assume that the palette is always the same length
     bne ::load_palette_loop
     rts 
 
