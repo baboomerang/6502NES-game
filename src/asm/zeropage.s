@@ -5,11 +5,19 @@
 .segment "ZEROPAGE"
 
 ; Define the two-byte variable for the palette source address
-ZP_PALETTE_ADDR_L: .res 1 ; Low byte of 16-bit source address
-ZP_PALETTE_ADDR_H: .res 1 ; High byte of 16-bit source address
-ZP_PALETTE_ADDR:   .res 2 ; Full 16-bit source address (used for ppu purposes)
+ZP_PALETTE_ADDR:             .res 2 ; Full 16-bit source address (used for ppu purposes)
+ZP_NAMETABLE_ADDR:           .res 2 ; Full 16-bit source address (used for ppu purposes)
+ZP_NMI_STATUS_NEEDS_NMI:     .res 1
+ZP_NMI_STATUS_NEEDS_DMA:     .res 1
+ZP_NMI_STATUS_NEEDS_DRAW:    .res 1
+ZP_NMI_STATUS_NEEDS_PPU_REG: .res 1
+ZP_NMI_STATUS_NEEDS_PADS:    .res 1
 
-; --- EXPORT the symbols so other files can see them ---
-.exportzp ZP_PALETTE_ADDR_L
-.exportzp ZP_PALETTE_ADDR_H
+; Export the symbols so other files can see them
 .exportzp ZP_PALETTE_ADDR
+.exportzp ZP_NAMETABLE_ADDR
+.exportzp ZP_NMI_STATUS_NEEDS_NMI
+.exportzp ZP_NMI_STATUS_NEEDS_DMA
+.exportzp ZP_NMI_STATUS_NEEDS_DRAW
+.exportzp ZP_NMI_STATUS_NEEDS_PPU_REG
+.exportzp ZP_NMI_STATUS_NEEDS_PADS

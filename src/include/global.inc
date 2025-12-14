@@ -11,6 +11,7 @@
 ; register interrupt handlers (found in init.s and main.s)
 .global reset_handler
 .global main, nmi_handler, irq_handler
+.global music_engine
 
 ; register ppu functions (found in ppu.s)
 .global ppu_wait_for_vblank, ppu_load_palette, ppu_clear_oam

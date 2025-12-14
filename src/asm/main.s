@@ -33,29 +33,103 @@ main:
   ;       find a program to create a name table
   ;       you might have to create your own graphics in your own CHR first
   ;       then create the name table based on it
+  ;       we could reuse the existing graphics
 
   PPU_ENABLE_RENDERING
 ::forever:
   nop
+  nop
+  lda #1
+  sta ZP_NMI_STATUS_NEEDS_NMI
+  nop
+  nop
+  sta ZP_NMI_STATUS_NEEDS_DMA
+  nop
+  nop
+  nop
+  jsr ppu_wait_for_vblank
   jmp ::forever
 
+
+; NMI happens once every 29,658 CPU cycles
+; VBlank lasts for ~2273 CPU cycles
 nmi_handler:
+  php    ;3
+  pha    ;3
+  txa    ;2
+  pha    ;3
+  tya    ;2
+  pha    ;3
+  ; Total 18 cycles
+  lda ZP_NMI_STATUS_NEEDS_NMI
+  beq ::end_nmi
+  lda #00
+  sta ZP_NMI_STATUS_NEEDS_NMI
+
+::ppu_dma:
+  lda ZP_NMI_STATUS_NEEDS_DMA
+  beq ::ppu_draw
+  jsr draw_hello
+  ;PPU_BEGIN_OAM_DMA_TRANSFER $0200
+  lda #00
+  sta ZP_NMI_STATUS_NEEDS_DMA
+
+::ppu_draw:
+  lda ZP_NMI_STATUS_NEEDS_DRAW
+  beq ::ppu_reg
+  bit PPUSTATUS
+  ;jsr draw                    ; Copy bytes from buffer to PPU
+  lda #00
+  sta ZP_NMI_STATUS_NEEDS_DRAW
+
+::ppu_reg:
+  lda ZP_NMI_STATUS_NEEDS_PPU_REG
+  beq ::pads
+  ;lda soft_PPUCTRL            ; Copy buffered $2000/$2001 writes
+  sta PPUCTRL
+  ;lda soft_PPUMASK
+  sta PPUMASK
+  ;setscroll xscroll, yscroll
+  lda #00
+  sta ZP_NMI_STATUS_NEEDS_PPU_REG
+
+::pads:
+  lda ZP_NMI_STATUS_NEEDS_PADS
+  beq ::end_nmi
+  ;jsr readpad                 ; Update current pad
+  lda #00
+  sta ZP_NMI_STATUS_NEEDS_PADS
+
+::end_nmi:
+  jsr music_engine
+  pla    ;4
+  tay    ;2
+  pla    ;4
+  tax    ;2
+  pla    ;4
+  plp    ;4
+  ; Total 22 cycles
+  rti    ;6
+
+
+;; example code
+draw_hello:
   ldx #$00 	         ; Set SPR-RAM address to 0
   stx $2003
 loop:	
-  lda hello, x ; Load the hello message into SPR-RAM
+  lda hello, x       ; Load the hello message into SPR-RAM
   sta $2004
   inx
   cpx #$1c
   bne loop
-  rti
+  rts
 
 irq_handler:
-    rti
+  rti
 
 hello:
-  .byte $00, $00, $00, $00 	; Why do I need these here?
-  .byte $00, $00, $00, $00
+  .byte $ff, $00, $00, $00 	; Why do I need these here?
+  .byte $ff, $00, $00, $00
   .byte $6c, $00, $00, $6c
   .byte $6c, $01, $00, $76
   .byte $6c, $02, $00, $80
