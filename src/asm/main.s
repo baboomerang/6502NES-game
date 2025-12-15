@@ -38,14 +38,12 @@ main:
   PPU_ENABLE_RENDERING
 ::forever:
   nop
+  jsr draw_hello_to_oam
   nop
   lda #1
   sta ZP_NMI_STATUS_NEEDS_NMI
   nop
-  nop
   sta ZP_NMI_STATUS_NEEDS_DMA
-  nop
-  nop
   nop
   jsr ppu_wait_for_vblank
   jmp ::forever
@@ -69,8 +67,7 @@ nmi_handler:
 ::ppu_dma:
   lda ZP_NMI_STATUS_NEEDS_DMA
   beq ::ppu_draw
-  jsr draw_hello
-  ;PPU_BEGIN_OAM_DMA_TRANSFER $0200
+  PPU_BEGIN_OAM_DMA_TRANSFER $0200
   lda #00
   sta ZP_NMI_STATUS_NEEDS_DMA
 
@@ -111,14 +108,11 @@ nmi_handler:
   ; Total 22 cycles
   rti    ;6
 
-
-;; example code
-draw_hello:
-  ldx #$00 	         ; Set SPR-RAM address to 0
-  stx $2003
+draw_hello_to_oam:
+  ldx #$00
 loop:	
-  lda hello, x       ; Load the hello message into SPR-RAM
-  sta $2004
+  lda hello, x                  ; Load the hello message into accumulator
+  sta CPU_SHADOW_OAM_ADDRESS, x ; Store byte into Shadow OAM $0200 (indexed)
   inx
   cpx #$1c
   bne loop
@@ -128,8 +122,8 @@ irq_handler:
   rti
 
 hello:
-  .byte $ff, $00, $00, $00 	; Why do I need these here?
-  .byte $ff, $00, $00, $00
+  .byte $ff, $00, $00, $ff 	; Why do I need these here?
+  .byte $ff, $00, $00, $ff
   .byte $6c, $00, $00, $6c
   .byte $6c, $01, $00, $76
   .byte $6c, $02, $00, $80
