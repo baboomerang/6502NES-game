@@ -1,10 +1,10 @@
 ;; Retrieved from https://www.nesdev.org/wiki/NES_2.0_header_for_ca65
 ;
 ; This macro pack for ca65 constructs a 16-byte NES 2.0 header.
-; A port for cc65 C code is available NES 2.0 header for cc65 
+; A port for cc65 C code is available NES 2.0 header for cc65
 ;
 ; NES 2.0 header generator for ca65 (nes2header.inc)
-; 
+;
 ; Copyright 2016 Damian Yerrick
 ; Copying and distribution of this file, with or without
 ; modification, are permitted in any medium without royalty provided

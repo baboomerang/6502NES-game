@@ -45,7 +45,7 @@ ppu_load_palette:
     inx
     cpx #PALETTE_DEFAULT_LENGTH     ; Assume that the palette is always the same length
     bne ::load_palette_loop
-    rts 
+    rts
 
 ; Copy bytes of data from the drawing buffer to PPUDATA
 draw:

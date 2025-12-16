@@ -14,7 +14,7 @@
 .global music_engine
 
 ; register ppu functions (found in ppu.s)
-.global ppu_wait_for_vblank, ppu_load_palette, ppu_clear_oam
+.global ppu_wait_for_vblank, ppu_load_palette, ppu_clear_oam, ppu_rle_decode_direct, decode_rle
 .global palette_data
 
 ; -----------------------------------------------------------
@@ -48,10 +48,10 @@
 ; --------------------------------------------------------------------
 .macro PPU_SET_ADDR addr
     bit PPUSTATUS       ; Reset the PPU's internal 1-byte address latch by reading $2002.
-    
+
     lda #>(addr)        ; Load the high byte of the address.
     sta PPUADDR         ; Write high byte to $2006 (PPUADDR).
-    
+
     lda #<(addr)        ; Load the low byte of the address.
     sta PPUADDR         ; Write low byte to $2006, completing the 16-bit address set.
 .endmacro
@@ -62,10 +62,10 @@
 ; --------------------------------------------------------------------
 .macro PPU_SET_SCROLL xsel, ysel
     bit PPUSTATUS       ; Reset the PPU address latch (guarantees next write is X scroll).
-    
+
     lda xsel            ; Load the horizontal (X) scroll value.
     sta PPUSCROLL       ; Write X scroll to $2005. This is the first write and flips the latch.
-    
+
     lda ysel            ; Load the vertical (Y) scroll value.
     sta PPUSCROLL       ; Write Y scroll to $2005, completing the scroll setup.
 .endmacro

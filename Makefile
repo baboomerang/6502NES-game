@@ -7,7 +7,7 @@ BIN_DIR   := bin
 INC_DIR   := src/include
 
 TARGET    := $(BIN_DIR)/main.nes
-CFG_FILE  := nrom256-without-dmc.cfg 
+CFG_FILE  := nrom256-without-dmc.cfg
 EMULATOR  := fceux
 
 # Find all assembly source files (.s) in the source directory

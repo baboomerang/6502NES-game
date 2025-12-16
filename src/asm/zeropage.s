@@ -12,6 +12,9 @@ ZP_NMI_STATUS_NEEDS_DMA:     .res 1
 ZP_NMI_STATUS_NEEDS_DRAW:    .res 1
 ZP_NMI_STATUS_NEEDS_PPU_REG: .res 1
 ZP_NMI_STATUS_NEEDS_PADS:    .res 1
+ZP_RLE_POINTER:              .res 2 ; Full 16-bit source address
+ZP_RLE_TAG:                  .res 1
+ZP_RLE_SELECTED_BYTE:        .res 1
 
 ; Export the symbols so other files can see them
 .exportzp ZP_PALETTE_ADDR
@@ -21,3 +24,6 @@ ZP_NMI_STATUS_NEEDS_PADS:    .res 1
 .exportzp ZP_NMI_STATUS_NEEDS_DRAW
 .exportzp ZP_NMI_STATUS_NEEDS_PPU_REG
 .exportzp ZP_NMI_STATUS_NEEDS_PADS
+.exportzp ZP_RLE_POINTER
+.exportzp ZP_RLE_TAG
+.exportzp ZP_RLE_SELECTED_BYTE

@@ -34,11 +34,15 @@ main:
   ;       you might have to create your own graphics in your own CHR first
   ;       then create the name table based on it
   ;       we could reuse the existing graphics
+  PPU_SET_ADDR $2000
+  LOAD_PTR ZP_RLE_POINTER, titlescreen
+  ;jsr ppu_rle_decode_direct
+  jsr decode_rle
 
   PPU_ENABLE_RENDERING
 ::forever:
   nop
-  jsr draw_hello_to_oam
+  ;jsr draw_hello_to_oam
   nop
   lda #1
   sta ZP_NMI_STATUS_NEEDS_NMI
@@ -110,7 +114,7 @@ nmi_handler:
 
 draw_hello_to_oam:
   ldx #$00
-loop:	
+loop:
   lda hello, x                  ; Load the hello message into accumulator
   sta CPU_SHADOW_OAM_ADDRESS, x ; Store byte into Shadow OAM $0200 (indexed)
   inx
@@ -131,56 +135,55 @@ hello:
   .byte $6c, $03, $00, $94
 
 title_palette:
-  ; Background Palette
-  .byte $0f, $00, $00, $00
-  .byte $0f, $00, $00, $00
-  .byte $0f, $00, $00, $00
-  .byte $0f, $00, $00, $00
+  .incbin "../data/title.pal"
 
-  ; Sprite Palette
-  .byte $0f, $20, $00, $00
-  .byte $0f, $00, $00, $00
-  .byte $0f, $00, $00, $00
-  .byte $0f, $00, $00, $00
+sprite_palette:
+    .byte $0f,$24,$36,$08,$0f,$02,$38,$26
+    .byte $0f,$29,$15,$14,$0f,$02,$38,$26
+
+titlescreen:
+  .incbin "../data/title.rle"
 
 ; Character memory
 .segment "CHR"
-  .byte %11000011	; H (00)
-  .byte %11000011
-  .byte %11000011
-  .byte %11111111
-  .byte %11111111
-  .byte %11000011
-  .byte %11000011
-  .byte %11000011
-  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  ;.byte %11000011	; H (00)
+  ;.byte %11000011
+  ;.byte %11000011
+  ;.byte %11111111
+  ;.byte %11111111
+  ;.byte %11000011
+  ;.byte %11000011
+  ;.byte %11000011
+  ;.byte $00, $00, $00, $00, $00, $00, $00, $00
 
-  .byte %11111111	; E (01)
-  .byte %11111111
-  .byte %11000000
-  .byte %11111100
-  .byte %11111100
-  .byte %11000000
-  .byte %11111111
-  .byte %11111111
-  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  ;.byte %11111111	; E (01)
+  ;.byte %11111111
+  ;.byte %11000000
+  ;.byte %11111100
+  ;.byte %11111100
+  ;.byte %11000000
+  ;.byte %11111111
+  ;.byte %11111111
+  ;.byte $00, $00, $00, $00, $00, $00, $00, $00
 
-  .byte %11000000	; L (02)
-  .byte %11000000
-  .byte %11000000
-  .byte %11000000
-  .byte %11000000
-  .byte %11000000
-  .byte %11111111
-  .byte %11111111
-  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  ;.byte %11000000	; L (02)
+  ;.byte %11000000
+  ;.byte %11000000
+  ;.byte %11000000
+  ;.byte %11000000
+  ;.byte %11000000
+  ;.byte %11111111
+  ;.byte %11111111
+  ;.byte $00, $00, $00, $00, $00, $00, $00, $00
 
-  .byte %01111110	; O (03)
-  .byte %11100111
-  .byte %11000011
-  .byte %11000011
-  .byte %11000011
-  .byte %11000011
-  .byte %11100111
-  .byte %01111110
-  .byte $00, $00, $00, $00, $00, $00, $00, $00
+  ;.byte %01111110	; O (03)
+  ;.byte %11100111
+  ;.byte %11000011
+  ;.byte %11000011
+  ;.byte %11000011
+  ;.byte %11000011
+  ;.byte %11100111
+  ;.byte %01111110
+  ;.byte $00, $00, $00, $00, $00, $00, $00, $00
+
+  .incbin "../data/title.chr"
