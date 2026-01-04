@@ -14,8 +14,11 @@
 .global music_engine
 
 ; register ppu functions (found in ppu.s)
-.global ppu_wait_for_vblank, ppu_load_palette, ppu_clear_oam, ppu_rle_decode_direct, decode_rle
+.global ppu_wait_for_vblank, ppu_load_palette, ppu_clear_oam, ppu_rle_decode_direct, ppu_decode_rle, fill_ram_value
 .global palette_data
+
+; register game functions (found in game.s)
+.global title_screen_tick, in_game_tick, game_over_tick
 
 ; -----------------------------------------------------------
 ; Macros

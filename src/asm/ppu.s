@@ -16,7 +16,7 @@ ppu_clear_oam:
     lda #$ff            ; Load the value $FF (off-screen Y position)
     ldx #$00            ; Start index at 0
 ::clear_loop:
-    sta $0200, x        ; Store $FF into the buffer (this sets the Y coord for a sprite)
+    sta CPU_SHADOW_OAM_ADDRESS, x ; Store $FF into the buffer (this sets the Y coord for a sprite)
     inx                 ; Increment X
     cpx #$ff            ; Check if X is 256 (wraps from $FF to $00 and sets Z flag)
     bne ::clear_loop    ; Loop until all 256 bytes of OAM_buffer have $FF
@@ -46,6 +46,26 @@ ppu_load_palette:
     cpx #PALETTE_DEFAULT_LENGTH     ; Assume that the palette is always the same length
     bne ::load_palette_loop
     rts
+
+; --------------------------------------------------------------------
+; fill_ram_value
+; Fills a 1024-byte block of RAM with a specific value.
+; Input: A = The value to write.
+; Precondition: RAM_DEST_PTR must be set to the start address.
+; --------------------------------------------------------------------
+fill_ram_value:
+    ldx #$04            ; Outer loop: 4 pages of 256 bytes
+    ldy #$00            ; Inner loop index
+    ; Note: We don't load A here. We assume the caller put the 
+    ; desired value in A before calling the function.
+::fill_loop:
+    sta (ZP_GENERIC_PURPOSE_GLOBAL_POINTER), y ; Write the value in A to RAM
+    iny                  ; Increment index
+    bne ::fill_loop      ; Loop until Y wraps to 0 (256 bytes)
+    inc ZP_GENERIC_PURPOSE_GLOBAL_POINTER + 1  ; Move pointer to next page (High Byte)
+    dex                  ; Decrement page counter
+    bne ::fill_loop      ; Loop until all 4 pages are done
+    rts 
 
 ; Copy bytes of data from the drawing buffer to PPUDATA
 draw:

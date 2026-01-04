@@ -61,7 +61,7 @@ inc_zp_ptr_y:
 
 ; Decompress RLE-Encoded data and write data to PPUDATA
 ; Depends on: get_byte() function
-decode_rle:
+ppu_decode_rle:
     ldy #00
     jsr get_byte
     sta ZP_RLE_TAG         ;first byte is rle tag delimiter

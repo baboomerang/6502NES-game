@@ -2,12 +2,8 @@
 ; src/asm/pad.s
 ; Pad (Joypad/Controller) Subroutines
 ;-------------------------------------------------
-.include "../include/nes2header.inc"
 .include "../include/global.inc"
-
-
-.segment "ZEROPAGE"
-current_pad: .res 1
+.include "../include/zeropage.inc"
 
 .segment "CODE"
 ; Improved controller read code: 133 cycles compared to 154 cycles
@@ -18,15 +14,15 @@ current_pad: .res 1
 ; Read buttons from controller 1
 pad_read_joy_1:
     lda #1
-    sta current_pad ;set up ring counter with 1 as start
-    sta JOY1        ;enable button polling
-    lsr a           ;set acumulator 0, shift bit into carry
-    sta JOY1        ;disable polling
-@loop:
-    lda JOY1        ;get 1 button from pad
-    lsr a           ;add buttons
-    rol current_pad
-    bcc @loop       ;loop until the starting bit "1" shifts left into carry
+    sta ZP_JOY_1_BUTTONS ;set up ring counter with 1 as start
+    sta JOY1             ;enable button polling
+    lsr a                ;set acumulator 0, shift bit into carry
+    sta JOY1             ;disable polling
+::loop:
+    lda JOY1             ;get 1 button from pad
+    lsr a                ;add buttons
+    rol ZP_JOY_1_BUTTONS
+    bcc ::loop            ;loop until the starting bit "1" shifts left into carry
     rts
 
 

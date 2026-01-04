@@ -28,30 +28,35 @@ main:
   LOAD_PTR ZP_PALETTE_ADDR, title_palette
   jsr ppu_load_palette
 
-  ; TODO: load nametable
-  ;       simple name table - not compressed for now
-  ;       find a program to create a name table
-  ;       you might have to create your own graphics in your own CHR first
-  ;       then create the name table based on it
-  ;       we could reuse the existing graphics
   PPU_SET_ADDR $2000
   LOAD_PTR ZP_RLE_POINTER, titlescreen
-  ;jsr ppu_rle_decode_direct
-  jsr decode_rle
+  jsr ppu_decode_rle
 
   PPU_ENABLE_RENDERING
 ::forever:
-  nop
-  ;jsr draw_hello_to_oam
-  nop
-  lda #1
-  sta ZP_NMI_STATUS_NEEDS_NMI
-  nop
-  sta ZP_NMI_STATUS_NEEDS_DMA
-  nop
+  inc ZP_NMI_STATUS_NEEDS_NMI
+  lda #>(::end-1)
+  pha
+  lda #<(::end-1)
+  pha                ; Set return point for the gamestate subroutine that will be called below
+::state_machine:
+  lda ZP_GAMESTATE   ; Current game state
+  asl                ; Multiply by 2 (0 = 0, 1 = 2, 2 = 4)
+  tax
+  lda state_jump_table+1, x
+  pha
+  lda state_jump_table, x
+  pha
+  rts                ; Clever return "to" subroutine/Jump to a subroutine based on the gamestate
+::end:
+  inc ZP_NMI_STATUS_NEEDS_PADS
   jsr ppu_wait_for_vblank
   jmp ::forever
 
+state_jump_table:
+  .word (title_screen_tick-1)
+  .word (in_game_tick-1)
+  .word (game_over_tick-1)
 
 ; NMI happens once every 29,658 CPU cycles
 ; VBlank lasts for ~2273 CPU cycles
@@ -71,7 +76,7 @@ nmi_handler:
 ::ppu_dma:
   lda ZP_NMI_STATUS_NEEDS_DMA
   beq ::ppu_draw
-  PPU_BEGIN_OAM_DMA_TRANSFER $0200
+  PPU_BEGIN_OAM_DMA_TRANSFER CPU_SHADOW_OAM_ADDRESS
   lda #00
   sta ZP_NMI_STATUS_NEEDS_DMA
 

@@ -12,9 +12,12 @@ ZP_NMI_STATUS_NEEDS_DMA:     .res 1
 ZP_NMI_STATUS_NEEDS_DRAW:    .res 1
 ZP_NMI_STATUS_NEEDS_PPU_REG: .res 1
 ZP_NMI_STATUS_NEEDS_PADS:    .res 1
-ZP_RLE_POINTER:              .res 2 ; Full 16-bit source address
+ZP_RLE_POINTER:              .res 2 ; Full 16-bit source address (used for ppu purposes, RLE decoding)
 ZP_RLE_TAG:                  .res 1
 ZP_RLE_SELECTED_BYTE:        .res 1
+ZP_JOY_1_BUTTONS:            .res 1
+ZP_GAMESTATE:                .res 1
+ZP_GENERIC_PURPOSE_GLOBAL_POINTER: .res 2 ; Full 16-bit source adddress (used for anything, be mindful of nmis)
 
 ; Export the symbols so other files can see them
 .exportzp ZP_PALETTE_ADDR
@@ -27,3 +30,6 @@ ZP_RLE_SELECTED_BYTE:        .res 1
 .exportzp ZP_RLE_POINTER
 .exportzp ZP_RLE_TAG
 .exportzp ZP_RLE_SELECTED_BYTE
+.exportzp ZP_JOY_1_BUTTONS
+.exportzp ZP_GAMESTATE
+.exportzp ZP_GENERIC_PURPOSE_GLOBAL_POINTER
