@@ -48,12 +48,12 @@ ppu_load_palette:
     rts
 
 ; --------------------------------------------------------------------
-; fill_ram_value
+; ppu_fill_ram_value
 ; Fills a 1024-byte block of RAM with a specific value.
 ; Input: A = The value to write.
 ; Precondition: RAM_DEST_PTR must be set to the start address.
 ; --------------------------------------------------------------------
-fill_ram_value:
+ppu_fill_ram_value:
     ldx #$04            ; Outer loop: 4 pages of 256 bytes
     ldy #$00            ; Inner loop index
     ; Note: We don't load A here. We assume the caller put the 
@@ -67,9 +67,23 @@ fill_ram_value:
     bne ::fill_loop      ; Loop until all 4 pages are done
     rts 
 
-; Copy bytes of data from the drawing buffer to PPUDATA
-draw:
-    rts
+; --------------------------------------------------------------------
+; ppu_draw_from_buffer
+; Copies PPU_DRAW_LENGTH from (ZP_PPU_DRAW_ADDR) to the PPU.
+;   1. PPU_SET_ADDR has been called to set the destination.
+;   2. ZP_PPU_DRAW_ADDR points to the source RAM.
+;   3. ZP_PPU_DRAW_LENGTH has the number of bytes to copy (1-255).
+; --------------------------------------------------------------------
+ppu_draw_from_buffer:
+    ldx ZP_PPU_DRAW_LENGTH
+    ldy #$00            ; Initialize index to 0.
+::draw_loop:
+    lda (ZP_PPU_DRAW_ADDR), y ; Load byte from CPU RAM.
+    sta PPUDATA         ; Write byte to PPU (auto-increments PPU address).
+    iny                 ; Increment index.
+    dex                 ; Decrement remaining byte count.
+    bne ::draw_loop     ; Repeat until X reaches 0.
+    rts                 ; Return to caller.
 
 ; Load a full uncompressed nametable (1024 bytes) from PRG rom to PPUDATA
 ; Input: 16-bit pointer

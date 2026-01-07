@@ -84,7 +84,8 @@ nmi_handler:
   lda ZP_NMI_STATUS_NEEDS_DRAW
   beq ::ppu_reg
   bit PPUSTATUS
-  ;jsr draw                    ; Copy bytes from buffer to PPU
+  PPU_SET_ADDR $2000          ; Nametable 1
+  jsr ppu_draw_from_buffer    ; Copy bytes from buffer to PPU
   lda #00
   sta ZP_NMI_STATUS_NEEDS_DRAW
 
@@ -102,7 +103,7 @@ nmi_handler:
 ::pads:
   lda ZP_NMI_STATUS_NEEDS_PADS
   beq ::end_nmi
-  ;jsr readpad                 ; Update current pad
+  jsr pad_read_joy_1                 ; Get latest button presses from player 1
   lda #00
   sta ZP_NMI_STATUS_NEEDS_PADS
 
@@ -117,15 +118,15 @@ nmi_handler:
   ; Total 22 cycles
   rti    ;6
 
-draw_hello_to_oam:
-  ldx #$00
-loop:
-  lda hello, x                  ; Load the hello message into accumulator
-  sta CPU_SHADOW_OAM_ADDRESS, x ; Store byte into Shadow OAM $0200 (indexed)
-  inx
-  cpx #$1c
-  bne loop
-  rts
+;draw_hello_to_oam:
+;  ldx #$00
+;loop:
+;  lda hello, x                  ; Load the hello message into accumulator
+;  sta CPU_SHADOW_OAM_ADDRESS, x ; Store byte into Shadow OAM $0200 (indexed)
+;  inx
+;  cpx #$1c
+;  bne loop
+;  rts
 
 irq_handler:
   rti

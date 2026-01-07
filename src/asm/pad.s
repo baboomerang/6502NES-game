@@ -22,7 +22,7 @@ pad_read_joy_1:
     lda JOY1             ;get 1 button from pad
     lsr a                ;add buttons
     rol ZP_JOY_1_BUTTONS
-    bcc ::loop            ;loop until the starting bit "1" shifts left into carry
+    bcc ::loop           ;loop until the starting bit "1" shifts left into carry
     rts
 
 
